@@ -11,19 +11,47 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
-export default function StudentLoginPage() {
+export default function TutorLoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Simulate login
-    toast.success('Login successful!');
-    router.push('/dashboard/student');
+    setSubmitting(true);
+
+    try {
+      const res = await fetch("http://authorproback.me/wp-json/jwt-auth/v1/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+        }),
+      });
+
+      const data = await res.json();
+      console.log("🔹 WP JWT Login Response:", data);
+
+      if (!res.ok) {
+        toast.error(data?.message || "Login failed");
+      } else {
+        localStorage.setItem("wpToken", data.token);
+        localStorage.setItem("wpUser", data.user_display_name || formData.username);
+
+        toast.success("Login successful!");
+        router.push("/dashboard/student");
+      }
+    } catch (err) {
+      console.error("❌ WP JWT Error:", err);
+      toast.error("Something went wrong!");
+    } finally {
+      setSubmitting(false);
+    }
+
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -48,7 +76,7 @@ export default function StudentLoginPage() {
                   <CardTitle className="text-2xl font-normal text-gray-900">Log In</CardTitle>
                   <p className="text-gray-600">
                     Don't have an account?{' '}
-                    <Link href="/auth/student/register" className="text-blue-600 hover:underline">
+                    <Link href="/auth/author/register" className="text-blue-600 hover:underline">
                       Sign up for free.
                     </Link>
                   </p>
@@ -158,13 +186,13 @@ export default function StudentLoginPage() {
                   <h3 className="text-lg font-medium text-gray-900 mb-4">New to TutorConnect?</h3>
                   <div className="space-y-3">
                     <Link 
-                      href="/auth/student/register"
+                      href="/auth/user/register"
                       className="block text-blue-600 hover:underline"
                     >
                       Register as a student
                     </Link>
                     <Link 
-                      href="/auth/tutor/register"
+                      href="/auth/author/register"
                       className="block text-blue-600 hover:underline"
                     >
                       Apply to become a tutor

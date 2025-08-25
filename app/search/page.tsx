@@ -59,7 +59,7 @@ export default function SearchPage() {
       <div className="py-8 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Find Your Perfect Tutor</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Find Your Perfect Author</h1>
             
             {/* Search Bar */}
             <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -84,7 +84,7 @@ export default function SearchPage() {
 
             {/* Results Count */}
             <p className="text-gray-600">
-              {tutors.length} tutors found
+              {tutors.length} Authors found
             </p>
           </div>
 
@@ -106,7 +106,7 @@ export default function SearchPage() {
 
               {tutors.length === 0 && (
                 <div className="text-center py-12">
-                  <p className="text-xl text-gray-500">No tutors found matching your criteria</p>
+                  <p className="text-xl text-gray-500">No authors found matching your criteria</p>
                   <p className="text-gray-400 mt-2">Try adjusting your search or filters</p>
                 </div>
               )}

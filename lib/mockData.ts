@@ -4,7 +4,8 @@ export const mockTutors = [
     name: 'Sarah Johnson',
     avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
     bio: 'Experienced mathematics tutor with 8+ years of teaching experience. Specialized in helping students overcome math anxiety and build confidence.',
-    subjects: ['Mathematics', 'Algebra', 'Calculus', 'Statistics'],
+    subjects: ['Romance', 'Science Fiction & Fantasy', 'Mystery, Thriller & Suspense', 'Self-help', 'History', 'Childrens Books'],
+
     hourlyRate: 45,
     rating: 4.9,
     reviewCount: 127,

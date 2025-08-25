@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
-export default function TutorLoginPage() {
+export default function StudentLoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     username: '',
@@ -23,7 +23,7 @@ export default function TutorLoginPage() {
     
     // Simulate login
     toast.success('Login successful!');
-    router.push('/dashboard/tutor');
+    router.push('/dashboard/student');
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -48,7 +48,7 @@ export default function TutorLoginPage() {
                   <CardTitle className="text-2xl font-normal text-gray-900">Log In</CardTitle>
                   <p className="text-gray-600">
                     Don't have an account?{' '}
-                    <Link href="/auth/tutor/register" className="text-blue-600 hover:underline">
+                    <Link href="/auth/user/register" className="text-blue-600 hover:underline">
                       Sign up for free.
                     </Link>
                   </p>
@@ -158,13 +158,13 @@ export default function TutorLoginPage() {
                   <h3 className="text-lg font-medium text-gray-900 mb-4">New to TutorConnect?</h3>
                   <div className="space-y-3">
                     <Link 
-                      href="/auth/student/register"
+                      href="/auth/user/register"
                       className="block text-blue-600 hover:underline"
                     >
                       Register as a student
                     </Link>
                     <Link 
-                      href="/auth/tutor/register"
+                      href="/auth/author/register"
                       className="block text-blue-600 hover:underline"
                     >
                       Apply to become a tutor

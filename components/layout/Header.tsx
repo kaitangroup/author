@@ -9,12 +9,44 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { BookOpen, Menu, User, MessageCircle, Calendar } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useSession, signOut } from 'next-auth/react';
 
 export function Header() {
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Set to true for demo
+  const router = useRouter();
+  const { data: session, status } = useSession(); // ✅ NextAuth session
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userType, setUserType] = useState<'student' | 'tutor'>('student');
+  const [wpUser, setWpUser] = useState<string | null>(null);
+
+  // ✅ check login status on mount
+  useEffect(() => {
+    const token = localStorage.getItem("wpToken");
+    const user = localStorage.getItem("wpUser");
+    setWpUser(user);
+
+    if (token || session) {
+      setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
+    }
+  }, [session, status]);
+
+  // ✅ handle logout
+  const handleLogout = async () => {
+    // WP logout
+    localStorage.removeItem("wpToken");
+    localStorage.removeItem("wpUser");
+
+    // NextAuth logout (if logged in via social)
+    await signOut({ callbackUrl: "/auth/user/login" });
+
+    setIsLoggedIn(false);
+    toast.success("You have been logged out successfully");
+    router.push("/auth/user/login");
+  };
 
   return (
     <header className="bg-white border-b sticky top-0 z-50">
@@ -23,16 +55,13 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <BookOpen className="h-8 w-8 text-blue-600" />
-            <span className="text-xl font-bold text-gray-900">TutorConnect</span>
+            <span className="text-xl font-bold text-gray-900">AuthorConnect</span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link href="/search" className="text-gray-600 hover:text-blue-600 transition-colors">
-              Find Tutors
-            </Link>
-            <Link href="/apply" className="text-gray-600 hover:text-blue-600 transition-colors">
-              Become a Tutor
+              Find Authors
             </Link>
             <Link href="/about" className="text-gray-600 hover:text-blue-600 transition-colors">
               About
@@ -52,10 +81,10 @@ export function Header() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href="/auth/student/login">Student Login</Link>
+                      <Link href="/auth/user/login">User Login</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/auth/tutor/login">Tutor Login</Link>
+                      <Link href="/auth/author/login">Author Login</Link>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -66,10 +95,10 @@ export function Header() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href="/auth/student/register">Find a Tutor</Link>
+                      <Link href="/auth/user/register">Find an Author</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/auth/tutor/register">Become a Tutor</Link>
+                      <Link href="/auth/author/register">Become an Author</Link>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -79,7 +108,7 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm">
                     <User className="h-4 w-4 mr-2" />
-                    Account
+                    {session?.user?.name || wpUser || "Account"}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -89,7 +118,7 @@ export function Header() {
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                                    <DropdownMenuItem asChild>
                     <Link href="/profile/edit">
                       <User className="h-4 w-4 mr-2" />
                       Edit Profile
@@ -108,10 +137,7 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => {
-                      setIsLoggedIn(false);
-                      toast.success('You have been logged out successfully');
-                    }}
+                    onClick={handleLogout}
                     className="text-red-600 focus:text-red-600"
                   >
                     Logout
@@ -129,7 +155,7 @@ export function Header() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href="/search">Find Tutors</Link>
+                  <Link href="/search">Find Authors</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/about">About</Link>
@@ -145,3 +171,4 @@ export function Header() {
     </header>
   );
 }
+

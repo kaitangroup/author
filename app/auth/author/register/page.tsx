@@ -15,7 +15,15 @@ import { Check } from 'lucide-react';
 
 export default function TutorRegisterPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    zipCode: string;
+    agreeToTerms: boolean;
+  }>({
     firstName: '',
     lastName: '',
     email: '',
@@ -30,6 +38,7 @@ export default function TutorRegisterPage() {
     password: '',
     confirmPassword: '',
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,11 +48,12 @@ export default function TutorRegisterPage() {
   const validatePassword = (password: string) => {
     // Strong password: at least 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    return passwordRegex.test(password);
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+   
     
     // Reset errors
     setErrors({ email: '', password: '', confirmPassword: '' });
@@ -79,9 +89,34 @@ export default function TutorRegisterPage() {
       return;
     }
 
+    try {
+      setSubmitting(true);
+      const res = await fetch("http://authorproback.me/wp-json/custom/v1/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      console.log("📌 API Response:", data);
+
+      if (!res.ok || !data.success) {
+        toast.error(data?.message || "Signup failed");
+      } else {
+        toast.success("🎉 Signup successful! Please log in.");
+        router.push("/auth/user/login");
+      }
+    } catch (err) {
+      console.error("❌ Signup Error:", err);
+      toast.error("Something went wrong!");
+    } finally {
+      setSubmitting(false);
+    }
+  
+
     // Simulate registration
     toast.success('Registration submitted! We will review your application and get back to you soon.');
-    router.push('/auth/tutor/login');
+    router.push('/auth/author/login');
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -122,7 +157,7 @@ export default function TutorRegisterPage() {
                   <p className="text-gray-600">Apply to become a tutor and start earning.</p>
                   <p className="text-sm text-gray-500 mt-2">
                     Already have an account?{' '}
-                    <Link href="/auth/tutor/login" className="text-blue-600 hover:underline">
+                    <Link href="/auth/author/login" className="text-blue-600 hover:underline">
                       Log in.
                     </Link>
                   </p>
@@ -254,7 +289,7 @@ export default function TutorRegisterPage() {
                   <div className="text-center mt-4">
                     <p className="text-sm text-gray-600">
                       Looking for a tutor?{' '}
-                      <Link href="/auth/student/register" className="text-blue-600 hover:underline">
+                      <Link href="/auth/user/register" className="text-blue-600 hover:underline">
                         Sign up as a student.
                       </Link>
                     </p>
