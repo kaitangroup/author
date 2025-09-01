@@ -30,7 +30,7 @@ interface ProfileData {
 
 export default function ProfileEditPage() {
   const [userType] = useState<'student' | 'tutor'>('tutor'); // This would come from auth context
-  const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
+  
 
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +40,7 @@ export default function ProfileEditPage() {
       try {
         const token = localStorage.getItem('wpToken'); // or however you store JWT
         console.log("Fetching profile with token:", token);
-        const res = await fetch(`{apiUrl}/wp-json/custom/v1/profile`, {
+        const res = await fetch('http://authorproback.me/wp-json/custom/v1/profile', {
           headers: {
             Authorization: `Bearer ${token}`, // if using JWT authentication
             'Content-Type': 'application/json',
@@ -49,21 +49,20 @@ export default function ProfileEditPage() {
 
         if (!res.ok) throw new Error('Failed to fetch profile');
         const data = await res.json();
-        console.log("Fetched profile data:", data);
-
+console.log("Fetched profile data:", data);
         // Map WP response to your ProfileData shape
         setProfileData({
           firstName: data.first_name || '',
           lastName: data.last_name || '',
           email: data.email || '',
-          phone: data.phone || '+8801711053387',
-          bio: data.bio || '',
-          location: data.location || 'New York, NY',
-          hourlyRate: data.hourlyRate || '45',
-          subjects: data.subjects || ['Mathematics', 'Algebra', 'Calculus', 'Statistics'],
-          education: data.education || 'PhD Mathematics, Columbia University',
-          experience: data.experience || '8+ years',
-          languages: data.languages || ['English', 'Spanish'],
+          phone: data.meta?.phone || '+8801711053387',
+          bio: data.description || '',
+          location: data.meta?.location || '',
+          hourlyRate: data.meta?.hourlyRate || '',
+          subjects: data.meta?.subjects || [],
+          education: data.meta?.education || '',
+          experience: data.meta?.experience || '',
+          languages: data.meta?.languages || [],
           avatar: data.avatar_urls?.['96'] || 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
         });
       } catch (err) {
@@ -117,25 +116,10 @@ export default function ProfileEditPage() {
     } : null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const token = localStorage.getItem("wpToken");
-      const res = await fetch('http://authorproback.me/wp-json/custom/v1/profile', {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify(profileData),
-      });
-      if (!res.ok) throw new Error("Failed to update profile");
-      const data = await res.json();
-      toast.success(data.message || "Profile updated");
-    } catch (err) {
-      toast.error("Failed to update profile");
-      console.error(err);
-    }
+    // Simulate saving profile
+    toast.success('Profile updated successfully!');
   };
 
   const handleAvatarChange = () => {

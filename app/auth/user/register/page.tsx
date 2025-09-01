@@ -15,7 +15,7 @@ import { FaGoogle, FaFacebook, FaApple } from "react-icons/fa";
 
 export default function StudentRegisterPage() {
   const router = useRouter();
-
+  const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -42,7 +42,7 @@ export default function StudentRegisterPage() {
     console.log("📌 Submitting Register Form:", formData);
 
     try {
-      const res = await fetch("http://authorproback.me/wp-json/custom/v1/register", {
+      const res = await fetch(`${apiUrl}/wp-json/custom/v1/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

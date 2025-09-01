@@ -15,6 +15,7 @@ import { Check } from 'lucide-react';
 
 export default function TutorRegisterPage() {
   const router = useRouter();
+  const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
   const [formData, setFormData] = useState<{
     firstName: string;
     lastName: string;
@@ -91,7 +92,7 @@ export default function TutorRegisterPage() {
 
     try {
       setSubmitting(true);
-      const res = await fetch("http://authorproback.me/wp-json/custom/v1/register-author", {
+      const res = await fetch(`${apiUrl}/wp-json/custom/v1/register-author`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

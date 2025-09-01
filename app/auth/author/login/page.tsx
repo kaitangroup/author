@@ -18,6 +18,8 @@ export default function TutorLoginPage() {
     password: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const apiUrl = process.env.WP_URL;
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

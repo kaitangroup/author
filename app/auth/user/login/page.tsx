@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getSession, signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,10 +17,12 @@ import { FaGoogle, FaFacebook, FaApple } from "react-icons/fa";
 
 export default function StudentLoginPage() {
   const router = useRouter();
+  const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
 
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [submitting, setSubmitting] = useState(false);
   const [socialLoading, setSocialLoading] = useState<null | "google" | "apple" | "facebook">(null);
+
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -81,7 +83,7 @@ export default function StudentLoginPage() {
     setSubmitting(true);
 
     try {
-      const res = await fetch("http://authorproback.me/wp-json/jwt-auth/v1/token", {
+      const res = await fetch(`${apiUrl}/wp-json/jwt-auth/v1/token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -101,7 +103,7 @@ export default function StudentLoginPage() {
         localStorage.setItem("wpToken", data.token);
         localStorage.setItem("wpUser", data.user_display_name || formData.username);
         const token = data.token;
-        const response = await fetch('http://authorproback.me/wp-json/custom/v1/profile', {
+        const response = await fetch(`${apiUrl}/wp-json/custom/v1/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

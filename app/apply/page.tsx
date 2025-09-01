@@ -47,7 +47,7 @@ export default function TutorApplicationPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(true);
-
+  const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
   // Initialize with defaults instead of null
   const [profileData, setProfileData] = useState<ProfileData>({
     firstName: '',
@@ -80,7 +80,7 @@ export default function TutorApplicationPage() {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem('wpToken');
-        const res = await fetch('http://authorproback.me/wp-json/custom/v1/profile', {
+        const res = await fetch(`${apiUrl}/wp-json/custom/v1/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -95,18 +95,18 @@ export default function TutorApplicationPage() {
           firstName: data.first_name || '',
           lastName: data.last_name || '',
           email: data.email || '',
-          phone: data.meta?.phone || '',
+          phone: data.phone || '',
           bio: data.description || '',
-          degree: data.meta?.degree || '',
-          location: data.meta?.location || '',
-          hourlyRate: data.meta?.hourlyRate || '',
-          subjects: data.meta?.subjects || [],
-          education: data.meta?.education || '',
-          teachingExperience: data.meta?.experience || '',
-          experience: data.meta?.experience || '',
-          languages: data.meta?.languages || [],
-          teachingStyle: data.meta?.teachingStyle || '',
-          availability: data.meta?.availability || [],
+          degree: data.degree || '',
+          location: data.location || '',
+          hourlyRate: data.hourlyRate || '',
+          subjects: data.subjects || [],
+          education: data.education || '',
+          teachingExperience: data.experience || '',
+          experience: data.experience || '',
+          languages: data.languages || [],
+          teachingStyle: data.teachingStyle || '',
+          availability: data.availability || [],
           avatar: data.avatar_urls?.['96'] || '',
         }));
       } catch (err) {
@@ -191,6 +191,25 @@ export default function TutorApplicationPage() {
       toast.error('Please select at least one subject to teach');
       return;
     }
+
+    try {
+      const token = localStorage.getItem("wpToken");
+      const res = await fetch(`${apiUrl}/wp-json/custom/v1/profile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(profileData),
+      });
+      if (!res.ok) throw new Error("Failed to update profile");
+      const data = await res.json();
+      toast.success(data.message || "Profile updated");
+    } catch (err) {
+      toast.error("Failed to update profile");
+      console.error(err);
+    }
+  
 
     toast.success('Application submitted successfully!');
     router.push('/');
