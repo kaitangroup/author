@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,57 +13,122 @@ import { Footer } from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { Check, Plus, X, Upload, DollarSign, Clock, Users, Star } from 'lucide-react';
+import { Check, Plus, X, DollarSign, Clock, Users, Star } from 'lucide-react';
+
+interface ProfileData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  bio: string;
+  location: string;
+  degree: string;
+  hourlyRate: string;
+  subjects: string[];
+  education: string;
+  experience: string;
+  languages: string[];
+  avatar: string;
+  availability: string[];
+  teachingExperience: string;
+  agreeToTerms: boolean;
+  teachingStyle?: string;
+  // Added missing fields
+  dateOfBirth?: string;
+  university?: string;
+  graduationYear?: string;
+  tutoringExperience?: string;
+  whyTutor?: string;
+  references?: string;
+  agreeToBackground?: boolean;
+}
 
 export default function TutorApplicationPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
-    // Personal Information
+  const [loading, setLoading] = useState(true);
+
+  // Initialize with defaults instead of null
+  const [profileData, setProfileData] = useState<ProfileData>({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
-    dateOfBirth: '',
+    bio: '',
     location: '',
-    
-    // Education & Experience
-    education: '',
     degree: '',
+    hourlyRate: '',
+    subjects: [],
+    education: '',
+    experience: '',
+    languages: [],
+    avatar: '',
+    availability: [],
+    teachingExperience: '',
+    agreeToTerms: false,
+    teachingStyle: '',
+    dateOfBirth: '',
     university: '',
     graduationYear: '',
-    teachingExperience: '',
     tutoringExperience: '',
-    
-    // Subjects & Skills
-    subjects: [] as string[],
-    hourlyRate: '',
-    availability: [] as string[],
-    
-    // Profile
-    bio: '',
-    teachingStyle: '',
     whyTutor: '',
-    
-    // Verification
-    backgroundCheck: false,
     references: '',
-    
-    // Agreement
-    agreeToTerms: false,
     agreeToBackground: false,
   });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('wpToken');
+        const res = await fetch('http://authorproback.me/wp-json/custom/v1/profile', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!res.ok) throw new Error('Failed to fetch profile');
+        const data = await res.json();
+
+        setProfileData(prev => ({
+          ...prev,
+          firstName: data.first_name || '',
+          lastName: data.last_name || '',
+          email: data.email || '',
+          phone: data.meta?.phone || '',
+          bio: data.description || '',
+          degree: data.meta?.degree || '',
+          location: data.meta?.location || '',
+          hourlyRate: data.meta?.hourlyRate || '',
+          subjects: data.meta?.subjects || [],
+          education: data.meta?.education || '',
+          teachingExperience: data.meta?.experience || '',
+          experience: data.meta?.experience || '',
+          languages: data.meta?.languages || [],
+          teachingStyle: data.meta?.teachingStyle || '',
+          availability: data.meta?.availability || [],
+          avatar: data.avatar_urls?.['96'] || '',
+        }));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const [newSubject, setNewSubject] = useState('');
 
   const subjects = [
-    'Mathematics', 'Algebra', 'Geometry', 'Calculus', 'Statistics',
-    'Physics', 'Chemistry', 'Biology', 'Science',
-    'English', 'Writing', 'Literature', 'Reading',
-    'History', 'Social Studies', 'Geography',
-    'Spanish', 'French', 'German', 'Italian',
-    'Programming', 'Computer Science', 'Web Development',
-    'SAT Prep', 'ACT Prep', 'Test Prep',
+    'Romance', 'Science Fiction & Fantasy', 'Mystery, Thriller & Suspense', 'Self-help', 'History',
+    'Childrens Books', 'Literature & Fiction', 'Biographies & Memoirs',
+    'Arts & Photography', 'Computers & Technology', 'Crafts, Hobbies & Home', 'Education & Teaching',
+    'Engineering & Transportation', 'Health, Humor & Entertainment', 'Medical Books',
+    'Politics & Social Sciences', 'Religion & Spirituality', 'Science & Math',
+    'Sports & Outdoors', 'Test Preparation', 'Travel',
+    'Editors Picks', 'Teacher Picks',
     'Elementary', 'Middle School', 'High School', 'College'
   ];
 
@@ -77,50 +142,57 @@ export default function TutorApplicationPage() {
     'Sunday Morning', 'Sunday Afternoon', 'Sunday Evening'
   ];
 
-  const handleInputChange = (field: string, value: string | boolean | string[]) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: keyof ProfileData, value: any) => {
+    setProfileData(prev => ({ ...prev, [field]: value }));
   };
 
   const addSubject = (subject: string) => {
-    if (!formData.subjects.includes(subject)) {
-      handleInputChange('subjects', [...formData.subjects, subject]);
+    if (subject.trim() && !profileData.subjects.includes(subject.trim())) {
+      setProfileData(prev => ({
+        ...prev,
+        subjects: [...prev.subjects, subject.trim()],
+      }));
     }
   };
 
-  const removeSubject = (subject: string) => {
-    handleInputChange('subjects', formData.subjects.filter(s => s !== subject));
-  };
-
   const addCustomSubject = () => {
-    if (newSubject.trim() && !formData.subjects.includes(newSubject.trim())) {
-      addSubject(newSubject.trim());
+    if (newSubject.trim() && !profileData.subjects.includes(newSubject.trim())) {
+      setProfileData(prev => ({
+        ...prev,
+        subjects: [...prev.subjects, newSubject.trim()],
+      }));
       setNewSubject('');
     }
   };
 
+  const removeSubject = (subject: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      subjects: prev.subjects.filter(s => s !== subject),
+    }));
+  };
+
   const toggleAvailability = (slot: string) => {
-    const current = formData.availability;
-    const updated = current.includes(slot)
-      ? current.filter(s => s !== slot)
-      : [...current, slot];
+    const updated = profileData.availability.includes(slot)
+      ? profileData.availability.filter(s => s !== slot)
+      : [...profileData.availability, slot];
     handleInputChange('availability', updated);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.agreeToTerms || !formData.agreeToBackground) {
+    if (!profileData.agreeToTerms || !profileData.agreeToBackground) {
       toast.error('Please agree to all terms and conditions');
       return;
     }
 
-    if (formData.subjects.length === 0) {
+    if (profileData.subjects.length === 0) {
       toast.error('Please select at least one subject to teach');
       return;
     }
 
-    // Simulate application submission
-    toast.success('Application submitted successfully! We will review your application and contact you within 2-3 business days.');
+    toast.success('Application submitted successfully!');
     router.push('/');
   };
 
@@ -147,7 +219,7 @@ export default function TutorApplicationPage() {
                 <Label htmlFor="firstName">First Name *</Label>
                 <Input
                   id="firstName"
-                  value={formData.firstName}
+                  value={profileData?.firstName}
                   onChange={(e) => handleInputChange('firstName', e.target.value)}
                   required
                 />
@@ -156,7 +228,7 @@ export default function TutorApplicationPage() {
                 <Label htmlFor="lastName">Last Name *</Label>
                 <Input
                   id="lastName"
-                  value={formData.lastName}
+                  value={profileData?.lastName}
                   onChange={(e) => handleInputChange('lastName', e.target.value)}
                   required
                 />
@@ -169,7 +241,7 @@ export default function TutorApplicationPage() {
                 <Input
                   id="email"
                   type="email"
-                  value={formData.email}
+                  value={profileData?.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   required
                 />
@@ -179,7 +251,7 @@ export default function TutorApplicationPage() {
                 <Input
                   id="phone"
                   type="tel"
-                  value={formData.phone}
+                  value={profileData?.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   required
                 />
@@ -192,7 +264,7 @@ export default function TutorApplicationPage() {
                 <Input
                   id="dateOfBirth"
                   type="date"
-                  value={formData.dateOfBirth}
+                  value={profileData?.dateOfBirth}
                   onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
                   required
                 />
@@ -201,7 +273,7 @@ export default function TutorApplicationPage() {
                 <Label htmlFor="location">Location (City, State) *</Label>
                 <Input
                   id="location"
-                  value={formData.location}
+                  value={profileData?.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
                   placeholder="e.g., New York, NY"
                   required
@@ -241,7 +313,7 @@ export default function TutorApplicationPage() {
                 <Label htmlFor="degree">Degree/Major</Label>
                 <Input
                   id="degree"
-                  value={formData.degree}
+                  value={profileData?.degree}
                   onChange={(e) => handleInputChange('degree', e.target.value)}
                   placeholder="e.g., Mathematics, English Literature"
                 />
@@ -250,7 +322,7 @@ export default function TutorApplicationPage() {
                 <Label htmlFor="university">University/Institution</Label>
                 <Input
                   id="university"
-                  value={formData.university}
+                  value={profileData.university}
                   onChange={(e) => handleInputChange('university', e.target.value)}
                   placeholder="e.g., Harvard University"
                 />
@@ -264,7 +336,7 @@ export default function TutorApplicationPage() {
                 type="number"
                 min="1950"
                 max="2030"
-                value={formData.graduationYear}
+                value={profileData.graduationYear}
                 onChange={(e) => handleInputChange('graduationYear', e.target.value)}
                 placeholder="e.g., 2020"
               />
@@ -322,7 +394,7 @@ export default function TutorApplicationPage() {
                     key={subject}
                     onClick={() => addSubject(subject)}
                     className={`p-2 text-sm border rounded cursor-pointer transition-colors ${
-                      formData.subjects.includes(subject)
+                      profileData.subjects.includes(subject)
                         ? 'bg-blue-100 border-blue-300 text-blue-700'
                         : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`}
@@ -345,7 +417,7 @@ export default function TutorApplicationPage() {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {formData.subjects.map((subject) => (
+                {profileData?.subjects.map((subject) => (
                   <Badge key={subject} variant="secondary" className="flex items-center gap-1">
                     {subject}
                     <button
@@ -369,7 +441,7 @@ export default function TutorApplicationPage() {
                   type="number"
                   min="15"
                   max="200"
-                  value={formData.hourlyRate}
+                  value={profileData?.hourlyRate}
                   onChange={(e) => handleInputChange('hourlyRate', e.target.value)}
                   className="pl-10"
                   placeholder="e.g., 45"
@@ -386,7 +458,7 @@ export default function TutorApplicationPage() {
                   <div key={slot} className="flex items-center space-x-2">
                     <Checkbox
                       id={slot}
-                      checked={formData.availability.includes(slot)}
+                      checked={profileData?.availability.includes(slot)}
                       onCheckedChange={() => toggleAvailability(slot)}
                     />
                     <Label htmlFor={slot} className="text-sm">
@@ -411,7 +483,7 @@ export default function TutorApplicationPage() {
               <Label htmlFor="bio">About You *</Label>
               <Textarea
                 id="bio"
-                value={formData.bio}
+                value={profileData?.bio}
                 onChange={(e) => handleInputChange('bio', e.target.value)}
                 rows={4}
                 placeholder="Tell students about yourself, your background, and what makes you a great tutor..."
@@ -423,7 +495,7 @@ export default function TutorApplicationPage() {
               <Label htmlFor="teachingStyle">Teaching Style</Label>
               <Textarea
                 id="teachingStyle"
-                value={formData.teachingStyle}
+                value={profileData?.teachingStyle}
                 onChange={(e) => handleInputChange('teachingStyle', e.target.value)}
                 rows={3}
                 placeholder="Describe your teaching approach and methods..."
@@ -434,7 +506,7 @@ export default function TutorApplicationPage() {
               <Label htmlFor="whyTutor">Why do you want to tutor?</Label>
               <Textarea
                 id="whyTutor"
-                value={formData.whyTutor}
+                value={profileData.whyTutor}
                 onChange={(e) => handleInputChange('whyTutor', e.target.value)}
                 rows={3}
                 placeholder="Share your motivation for becoming a tutor..."
@@ -445,7 +517,7 @@ export default function TutorApplicationPage() {
               <Label htmlFor="references">References (Optional)</Label>
               <Textarea
                 id="references"
-                value={formData.references}
+                value={profileData.references}
                 onChange={(e) => handleInputChange('references', e.target.value)}
                 rows={2}
                 placeholder="Provide contact information for professional or academic references..."
@@ -456,7 +528,7 @@ export default function TutorApplicationPage() {
               <div className="flex items-start space-x-3">
                 <Checkbox
                   id="agreeToBackground"
-                  checked={formData.agreeToBackground}
+                  checked={profileData.agreeToBackground}
                   onCheckedChange={(checked) => handleInputChange('agreeToBackground', checked)}
                   required
                 />
@@ -468,7 +540,7 @@ export default function TutorApplicationPage() {
               <div className="flex items-start space-x-3">
                 <Checkbox
                   id="agreeToTerms"
-                  checked={formData.agreeToTerms}
+                  checked={profileData.agreeToTerms}
                   onCheckedChange={(checked) => handleInputChange('agreeToTerms', checked)}
                   required
                 />
@@ -496,7 +568,7 @@ export default function TutorApplicationPage() {
       <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            Become a TutorConnect Tutor
+            Become an AuthorConnect Author
           </h1>
           <p className="text-xl mb-8 opacity-90">
             Share your knowledge, set your own schedule, and earn up to $80+ per hour
@@ -592,7 +664,7 @@ export default function TutorApplicationPage() {
                     <Button 
                       type="submit" 
                       className="bg-blue-600 hover:bg-blue-700"
-                      disabled={!formData.agreeToTerms || !formData.agreeToBackground}
+                      disabled={!profileData.agreeToTerms || !profileData.agreeToBackground}
                     >
                       Submit Application
                     </Button>

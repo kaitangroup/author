@@ -12,10 +12,10 @@ export default function AboutPage() {
       <section className="bg-gradient-to-b from-blue-50 to-white py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            About TutorConnect
+            About AuthorConnect
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            We're passionate about connecting students with exceptional tutors to unlock their full potential and achieve academic success.
+            We're passionate about connecting students with exceptional authors to unlock their full potential and achieve academic success.
           </p>
         </div>
       </section>
@@ -27,10 +27,10 @@ export default function AboutPage() {
             <div>
               <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
               <p className="text-gray-600 text-lg leading-relaxed mb-6">
-                At TutorConnect, we believe that every student deserves access to quality education. Our platform connects learners with passionate, qualified tutors who can provide personalized instruction tailored to individual learning styles.
+                At AuthorConnect, we believe that every student deserves access to quality education. Our platform connects learners with passionate, qualified authors who can provide personalized instruction tailored to individual learning styles.
               </p>
               <p className="text-gray-600 text-lg leading-relaxed">
-                Whether you're struggling with a specific subject, preparing for exams, or looking to excel beyond your current level, our tutors are here to guide you every step of the way.
+                Whether you're struggling with a specific subject, preparing for exams, or looking to excel beyond your current level, our authors are here to guide you every step of the way.
               </p>
             </div>
             <div className="bg-blue-50 p-8 rounded-lg">
@@ -69,7 +69,7 @@ export default function AboutPage() {
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Excellence</h3>
                 <p className="text-gray-600">
-                  Maintaining the highest standards in tutor selection and educational outcomes.
+                  Maintaining the highest standards in author selection and educational outcomes.
                 </p>
               </CardContent>
             </Card>
@@ -113,7 +113,7 @@ export default function AboutPage() {
             </div>
             <div>
               <div className="text-4xl font-bold text-green-600 mb-2">2,500+</div>
-              <p className="text-gray-600">Qualified Tutors</p>
+              <p className="text-gray-600">Qualified authors</p>
             </div>
             <div>
               <div className="text-4xl font-bold text-purple-600 mb-2">100+</div>

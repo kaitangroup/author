@@ -41,6 +41,22 @@ export default function TutorLoginPage() {
       } else {
         localStorage.setItem("wpToken", data.token);
         localStorage.setItem("wpUser", data.user_display_name || formData.username);
+        const token = data.token;
+        const response = await fetch('http://authorproback.me/wp-json/custom/v1/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+       
+        const profiledata = await response.json();
+        if (!response.ok) {
+          toast.error(profiledata?.message || "Login failed");
+          console.log("❌ Profile Fetch Error:", profiledata);
+        } 
+        console.log(profiledata);
+        localStorage.setItem("wpUserdata",  JSON.stringify(profiledata));
+      
+
 
         toast.success("Login successful!");
         router.push("/dashboard/student");

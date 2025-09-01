@@ -26,7 +26,7 @@ export default function StudentDashboard() {
         <div className="max-w-7xl mx-auto">
           {/* Dashboard Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Student Dashboard</h1>
+            <h1 className="text-3xl font-bold mb-2">User Dashboard</h1>
             <p className="text-gray-600">Welcome back! Here's what's happening with your learning journey.</p>
           </div>
 
@@ -40,7 +40,7 @@ export default function StudentDashboard() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">{mockBookings.length}</p>
-                    <p className="text-sm text-gray-600">Total Lessons</p>
+                    <p className="text-sm text-gray-600">Total Meetings</p>
                   </div>
                 </div>
               </CardContent>
@@ -92,11 +92,11 @@ export default function StudentDashboard() {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Upcoming Lessons */}
+              {/* Upcoming Meetings */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle>Upcoming Lessons</CardTitle>
+                    <CardTitle>Upcoming Meetings</CardTitle>
                     <Link href="/search">
                       <Button size="sm">
                         <Plus className="h-4 w-4 mr-2" />
@@ -132,7 +132,7 @@ export default function StudentDashboard() {
                   ) : (
                     <div className="text-center py-8">
                       <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500 mb-4">No upcoming lessons</p>
+                      <p className="text-gray-500 mb-4">No upcoming Meetings</p>
                       <Link href="/search">
                         <Button>Find a Tutor</Button>
                       </Link>
@@ -240,7 +240,7 @@ export default function StudentDashboard() {
                   <div className="space-y-4">
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm">Mathematics</span>
+                        <span className="text-sm">Science Fiction & Fantasy</span>
                         <span className="text-sm text-gray-600">85%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
@@ -250,7 +250,7 @@ export default function StudentDashboard() {
                     
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm">Programming</span>
+                        <span className="text-sm">Romance</span>
                         <span className="text-sm text-gray-600">72%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">

@@ -37,7 +37,8 @@ export const mockTutors = [
     name: 'Michael Chen',
     avatar: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=400',
     bio: 'Software engineer and programming tutor. I help students learn to code and prepare for technical interviews.',
-    subjects: ['Programming', 'JavaScript', 'Python', 'Web Development'],
+    subjects: ['Romance', 'Science Fiction & Fantasy', 'Mystery, Thriller & Suspense', 'Self-help', 'History', 'Childrens Books'],
+
     hourlyRate: 60,
     rating: 4.8,
     reviewCount: 89,
@@ -62,7 +63,8 @@ export const mockTutors = [
     name: 'Emily Rodriguez',
     avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
     bio: 'Native Spanish speaker and certified language instructor. Making Spanish fun and accessible for all levels.',
-    subjects: ['Spanish', 'Grammar', 'Conversation', 'Literature'],
+    subjects: ['Romance', 'Science Fiction & Fantasy', 'Mystery, Thriller & Suspense', 'Self-help', 'History', 'Childrens Books'],
+
     hourlyRate: 35,
     rating: 4.9,
     reviewCount: 156,
@@ -87,7 +89,8 @@ export const mockTutors = [
     name: 'Dr. Robert Kim',
     avatar: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=400',
     bio: 'Former university professor with expertise in physics and chemistry. Passionate about making complex concepts simple.',
-    subjects: ['Physics', 'Chemistry', 'Science', 'AP Physics'],
+  subjects: ['Romance', 'Science Fiction & Fantasy', 'Mystery, Thriller & Suspense', 'Self-help', 'History', 'Childrens Books'],
+
     hourlyRate: 70,
     rating: 4.7,
     reviewCount: 203,
@@ -104,7 +107,8 @@ export const mockTutors = [
     name: 'Jessica Williams',
     avatar: 'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&w=400',
     bio: 'English literature enthusiast and writing coach. Helping students excel in reading, writing, and critical thinking.',
-    subjects: ['English', 'Writing', 'Literature', 'Reading Comprehension'],
+  subjects: ['Romance', 'Science Fiction & Fantasy', 'Mystery, Thriller & Suspense', 'Self-help', 'History', 'Childrens Books'],
+
     hourlyRate: 40,
     rating: 4.8,
     reviewCount: 74,
@@ -121,7 +125,8 @@ export const mockTutors = [
     name: 'Ahmed Hassan',
     avatar: 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=400',
     bio: 'Biochemistry researcher and tutor specializing in organic chemistry and biology. Patient and thorough teaching style.',
-    subjects: ['Chemistry', 'Biology', 'Organic Chemistry', 'Biochemistry'],
+  subjects: ['Romance', 'Science Fiction & Fantasy', 'Mystery, Thriller & Suspense', 'Self-help', 'History', 'Childrens Books'],
+
     hourlyRate: 55,
     rating: 4.9,
     reviewCount: 112,

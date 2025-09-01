@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,69 +13,128 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Camera, Plus, X } from 'lucide-react';
+interface ProfileData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  bio: string;
+  location: string;
+  hourlyRate: string;
+  subjects: string[];
+  education: string;
+  experience: string;
+  languages: string[];
+  avatar: string;
+}
 
 export default function ProfileEditPage() {
   const [userType] = useState<'student' | 'tutor'>('tutor'); // This would come from auth context
-  const [profileData, setProfileData] = useState({
-    firstName: 'Sarah',
-    lastName: 'Johnson',
-    email: 'sarah.johnson@email.com',
-    phone: '+1 (555) 123-4567',
-    bio: 'Experienced mathematics tutor with 8+ years of teaching experience. Specialized in helping students overcome math anxiety and build confidence.',
-    location: 'New York, NY',
-    hourlyRate: '45',
-    subjects: ['Mathematics', 'Algebra', 'Calculus', 'Statistics'],
-    education: 'PhD Mathematics, Columbia University',
-    experience: '8+ years',
-    languages: ['English', 'Spanish'],
-    avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400'
-  });
+  
+
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('wpToken'); // or however you store JWT
+        console.log("Fetching profile with token:", token);
+        const res = await fetch('http://authorproback.me/wp-json/custom/v1/profile', {
+          headers: {
+            Authorization: `Bearer ${token}`, // if using JWT authentication
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!res.ok) throw new Error('Failed to fetch profile');
+        const data = await res.json();
+
+        // Map WP response to your ProfileData shape
+        setProfileData({
+          firstName: data.first_name || '',
+          lastName: data.last_name || '',
+          email: data.email || '',
+          phone: data.meta?.phone || '+8801711053387',
+          bio: data.description || '',
+          location: data.meta?.location || 'New York, NY',
+          hourlyRate: data.meta?.hourlyRate || '45',
+          subjects: data.meta?.subjects || ['Mathematics', 'Algebra', 'Calculus', 'Statistics'],
+          education: data.meta?.education || 'PhD Mathematics, Columbia University',
+          experience: data.meta?.experience || '8+ years',
+          languages: data.meta?.languages || ['English', 'Spanish'],
+          avatar: data.avatar_urls?.['96'] || 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const [newSubject, setNewSubject] = useState('');
   const [newLanguage, setNewLanguage] = useState('');
 
   const handleInputChange = (field: string, value: string) => {
-    setProfileData(prev => ({ ...prev, [field]: value }));
+    setProfileData(prev => prev ? { ...prev, [field]: value } : null);
   };
 
   const addSubject = () => {
-    if (newSubject.trim() && !profileData.subjects.includes(newSubject.trim())) {
-      setProfileData(prev => ({
+    if (profileData && newSubject.trim() && !profileData?.subjects.includes(newSubject.trim())) {
+      setProfileData(prev => prev ? {
         ...prev,
         subjects: [...prev.subjects, newSubject.trim()]
-      }));
+      } : null);
       setNewSubject('');
     }
   };
 
   const removeSubject = (subject: string) => {
-    setProfileData(prev => ({
+    setProfileData(prev => prev ? {
       ...prev,
       subjects: prev.subjects.filter(s => s !== subject)
-    }));
+    } : null);
   };
 
   const addLanguage = () => {
-    if (newLanguage.trim() && !profileData.languages.includes(newLanguage.trim())) {
-      setProfileData(prev => ({
+    if (profileData && newLanguage.trim() && !profileData?.languages.includes(newLanguage.trim())) {
+      setProfileData(prev => prev ? {
         ...prev,
         languages: [...prev.languages, newLanguage.trim()]
-      }));
+      } : null);
       setNewLanguage('');
     }
   };
 
   const removeLanguage = (language: string) => {
-    setProfileData(prev => ({
+    setProfileData(prev => prev ? {
       ...prev,
       languages: prev.languages.filter(l => l !== language)
-    }));
+    } : null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate saving profile
-    toast.success('Profile updated successfully!');
+    try {
+      const token = localStorage.getItem("wpToken");
+      const res = await fetch('http://authorproback.me/wp-json/custom/v1/profile', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(profileData),
+      });
+      if (!res.ok) throw new Error("Failed to update profile");
+      const data = await res.json();
+      toast.success(data.message || "Profile updated");
+    } catch (err) {
+      toast.error("Failed to update profile");
+      console.error(err);
+    }
   };
 
   const handleAvatarChange = () => {
@@ -103,8 +162,8 @@ export default function ProfileEditPage() {
               <CardContent>
                 <div className="flex items-center gap-6">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={profileData.avatar} alt="Profile" />
-                    <AvatarFallback>{profileData.firstName[0]}{profileData.lastName[0]}</AvatarFallback>
+                    <AvatarImage src={profileData?.avatar || ''} alt="Profile" />
+                    <AvatarFallback>{profileData?.firstName[0]}{profileData?.lastName[0]}</AvatarFallback>
                   </Avatar>
                   <div>
                     <Button type="button" variant="outline" onClick={handleAvatarChange}>
@@ -130,7 +189,7 @@ export default function ProfileEditPage() {
                     <Label htmlFor="firstName">First Name *</Label>
                     <Input
                       id="firstName"
-                      value={profileData.firstName}
+                      value={profileData?.firstName}
                       onChange={(e) => handleInputChange('firstName', e.target.value)}
                       required
                     />
@@ -139,7 +198,7 @@ export default function ProfileEditPage() {
                     <Label htmlFor="lastName">Last Name *</Label>
                     <Input
                       id="lastName"
-                      value={profileData.lastName}
+                      value={profileData?.lastName}
                       onChange={(e) => handleInputChange('lastName', e.target.value)}
                       required
                     />
@@ -152,7 +211,7 @@ export default function ProfileEditPage() {
                     <Input
                       id="email"
                       type="email"
-                      value={profileData.email}
+                      value={profileData?.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       required
                     />
@@ -161,7 +220,7 @@ export default function ProfileEditPage() {
                     <Label htmlFor="phone">Phone Number</Label>
                     <Input
                       id="phone"
-                      value={profileData.phone}
+                      value={profileData?.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
                     />
                   </div>
@@ -171,7 +230,7 @@ export default function ProfileEditPage() {
                   <Label htmlFor="location">Location</Label>
                   <Input
                     id="location"
-                    value={profileData.location}
+                    value={profileData?.location}
                     onChange={(e) => handleInputChange('location', e.target.value)}
                     placeholder="City, State"
                   />
@@ -181,7 +240,7 @@ export default function ProfileEditPage() {
                   <Label htmlFor="bio">Bio</Label>
                   <Textarea
                     id="bio"
-                    value={profileData.bio}
+                    value={profileData?.bio}
                     onChange={(e) => handleInputChange('bio', e.target.value)}
                     rows={4}
                     placeholder="Tell students about yourself, your teaching style, and experience..."
@@ -205,7 +264,7 @@ export default function ProfileEditPage() {
                         <Input
                           id="hourlyRate"
                           type="number"
-                          value={profileData.hourlyRate}
+                          value={profileData?.hourlyRate}
                           onChange={(e) => handleInputChange('hourlyRate', e.target.value)}
                           min="10"
                           max="200"
@@ -214,7 +273,7 @@ export default function ProfileEditPage() {
                       <div>
                         <Label htmlFor="experience">Years of Experience</Label>
                         <Select 
-                          value={profileData.experience} 
+                          value={profileData?.experience} 
                           onValueChange={(value) => handleInputChange('experience', value)}
                         >
                           <SelectTrigger>
@@ -235,7 +294,7 @@ export default function ProfileEditPage() {
                       <Label htmlFor="education">Education</Label>
                       <Input
                         id="education"
-                        value={profileData.education}
+                        value={profileData?.education}
                         onChange={(e) => handleInputChange('education', e.target.value)}
                         placeholder="Degree, Institution"
                       />
@@ -250,7 +309,7 @@ export default function ProfileEditPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex flex-wrap gap-2">
-                      {profileData.subjects.map((subject) => (
+                      {profileData?.subjects.map((subject) => (
                         <Badge key={subject} variant="secondary" className="flex items-center gap-1">
                           {subject}
                           <button
@@ -285,7 +344,7 @@ export default function ProfileEditPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex flex-wrap gap-2">
-                      {profileData.languages.map((language) => (
+                      {profileData?.languages.map((language) => (
                         <Badge key={language} variant="secondary" className="flex items-center gap-1">
                           {language}
                           <button

@@ -9,12 +9,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Filter } from 'lucide-react';
 import { mockTutors } from '@/lib/mockData';
+type Filters = {
+  subjects: string[];
+  priceRange: [number, number];
+  rating: number;
+  availability: string;
+};
 
 export default function SearchPage() {
   const [tutors, setTutors] = useState(mockTutors);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<Filters>({
     subjects: [],
     priceRange: [0, 100],
     rating: 0,

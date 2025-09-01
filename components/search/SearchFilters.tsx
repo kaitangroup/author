@@ -8,9 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 
 const subjects = [
-  'Mathematics', 'Science', 'English', 'History', 'Programming', 
-  'Spanish', 'French', 'Chemistry', 'Physics', 'Biology'
-];
+  'Romance', 'Science Fiction & Fantasy', 'Mystery, Thriller & Suspense', 'Self-help', 'History', 
+  'Children Books'];
+
+
+
+
+
+
+
+
+
 
 interface SearchFiltersProps {
   filters: {

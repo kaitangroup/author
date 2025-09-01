@@ -91,7 +91,7 @@ export default function TutorRegisterPage() {
 
     try {
       setSubmitting(true);
-      const res = await fetch("http://authorproback.me/wp-json/custom/v1/register", {
+      const res = await fetch("http://authorproback.me/wp-json/custom/v1/register-author", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -114,9 +114,6 @@ export default function TutorRegisterPage() {
     }
   
 
-    // Simulate registration
-    toast.success('Registration submitted! We will review your application and get back to you soon.');
-    router.push('/auth/author/login');
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {

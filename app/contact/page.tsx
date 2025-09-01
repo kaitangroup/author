@@ -73,7 +73,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <p className="font-medium">Email</p>
-                      <p className="text-gray-600">support@tutorconnect.com</p>
+                      <p className="text-gray-600">rgj@rolandjones.com</p>
                     </div>
                   </div>
 
@@ -83,7 +83,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <p className="font-medium">Phone</p>
-                      <p className="text-gray-600">+1 (555) 123-4567</p>
+                      <p className="text-gray-600">(347) 862-9254 Ext. 701</p>
                     </div>
                   </div>
 
@@ -94,8 +94,9 @@ export default function ContactPage() {
                     <div>
                       <p className="font-medium">Address</p>
                       <p className="text-gray-600">
-                        123 Education Ave<br />
-                        New York, NY 10001
+                        {/* 123 Education Ave<br />
+                        New York, NY 10001 */}
+                        1325 Avenue of the Americas, 28th Floor, New York, NY 10019
                       </p>
                     </div>
                   </div>
@@ -127,7 +128,7 @@ export default function ContactPage() {
                       <li>• How do I book a lesson?</li>
                       <li>• How do payments work?</li>
                       <li>• Can I reschedule lessons?</li>
-                      <li>• How do I become a tutor?</li>
+                      <li>• How do I become a Author?</li>
                     </ul>
                   </div>
                   <Button variant="outline" size="sm" className="w-full">
@@ -181,7 +182,7 @@ export default function ContactPage() {
                           <SelectContent>
                             <SelectItem value="general">General Inquiry</SelectItem>
                             <SelectItem value="student-support">Student Support</SelectItem>
-                            <SelectItem value="tutor-support">Tutor Support</SelectItem>
+                            <SelectItem value="tutor-support">Author Support</SelectItem>
                             <SelectItem value="technical">Technical Issue</SelectItem>
                             <SelectItem value="billing">Billing Question</SelectItem>
                             <SelectItem value="partnership">Partnership</SelectItem>

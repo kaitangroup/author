@@ -79,7 +79,7 @@ export default function MessagesPage() {
                             </div>
                             <p className="text-sm text-gray-600 truncate mt-1">{message.lastMessage}</p>
                             {message.unread && (
-                              <Badge className="mt-2" variant="default" size="sm">New</Badge>
+                              <Badge className="mt-2" variant="default" >New</Badge>
                             )}
                           </div>
                         </div>

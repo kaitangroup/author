@@ -18,14 +18,26 @@ export function Header() {
   const router = useRouter();
   const { data: session, status } = useSession(); // ✅ NextAuth session
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userType, setUserType] = useState<'student' | 'tutor'>('student');
+  const [profileEditLink, setProfileEditLink] = useState('profile/edit');
+  const [userType, setUserType] = useState<'student' | 'author'>('student');
   const [wpUser, setWpUser] = useState<string | null>(null);
 
   // ✅ check login status on mount
   useEffect(() => {
     const token = localStorage.getItem("wpToken");
     const user = localStorage.getItem("wpUser");
+    const profiledata = localStorage.getItem("wpUserdata");
     setWpUser(user);
+    if (profiledata) {
+      const profile = JSON.parse(profiledata);
+      if (profile.role === 'author') {
+        setUserType('author');
+        setProfileEditLink('apply');
+      } else {
+        setUserType('student');
+        setProfileEditLink('profile/edit');
+      }
+    }
 
     if (token || session) {
       setIsLoggedIn(true);
@@ -39,6 +51,7 @@ export function Header() {
     // WP logout
     localStorage.removeItem("wpToken");
     localStorage.removeItem("wpUser");
+    localStorage.removeItem("wpUserdata");
 
     // NextAuth logout (if logged in via social)
     await signOut({ callbackUrl: "/auth/user/login" });
@@ -75,19 +88,9 @@ export function Header() {
           <div className="flex items-center space-x-4">
             {!isLoggedIn ? (
               <>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost">Login</Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href="/auth/user/login">User Login</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/auth/author/login">Author Login</Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                 <Link href="/auth/user/login">
+              <Button variant="ghost">Login</Button>
+            </Link>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -119,7 +122,7 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                                     <DropdownMenuItem asChild>
-                    <Link href="/profile/edit">
+                    <Link href={`/${profileEditLink}`}>
                       <User className="h-4 w-4 mr-2" />
                       Edit Profile
                     </Link>
