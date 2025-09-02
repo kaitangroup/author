@@ -50,7 +50,7 @@ export default function TutorProfilePage() {
   const [loading, setLoading] = useState<boolean>(false);
   
   // Find tutor by ID (in real app, this would be an API call)
-  const tutor = mockTutors.find(t => t.id === params.id);
+  const tutor = mockTutors.find(t => t.id == '1');
   // Fetch users from WP REST endpoint
   useEffect(() => {
     const abortCtrl = new AbortController();
@@ -89,7 +89,7 @@ export default function TutorProfilePage() {
     return () => abortCtrl.abort();
   }, []);
 
-  if (!tutor) {
+  if (!author || !tutor) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -117,7 +117,7 @@ export default function TutorProfilePage() {
                     <Avatar className="h-24 w-24">
                       <AvatarImage src={author?.avatar} alt={author?.name} />
                       <AvatarFallback className="text-lg">
-                        {tutor.name.split(' ').map(n => n[0]).join('')}
+                        {author.name.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                     
