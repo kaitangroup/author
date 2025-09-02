@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -15,13 +15,79 @@ import {
 } from 'lucide-react';
 import { mockTutors } from '@/lib/mockData';
 import { useParams } from 'next/navigation';
+type WPUser = {
+  id: number;
+  name: string;
+  bio: string;
+  slug: string;
+  location: string;
+  roles: string[];
+  description?: string;
+  avatar?: string;
+  website?: string;
+  degree?: string;
+  hourly_rate?: number;
+  subjects: string[];
+  education?: string;
+  experience?: string;
+  availability?: string[];
+  teaching_experience?: string;
+  teaching_style?: string;
+  date_of_birth?: string;
+  university?: string;
+  graduation_year?: string;
+  languages?: string;
+  tutoring_experience?: string;
+  why_tutor?: string;
+  references?: string;
+  location_city_state?: string;
+};
 
 export default function TutorProfilePage() {
   const params = useParams();
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [author, setAuthor] = useState<WPUser>();
+  const [loading, setLoading] = useState<boolean>(false);
   
   // Find tutor by ID (in real app, this would be an API call)
   const tutor = mockTutors.find(t => t.id === params.id);
+  // Fetch users from WP REST endpoint
+  useEffect(() => {
+    const abortCtrl = new AbortController();
+    async function fetchUsers() {
+      setLoading(true);     
+
+      try {
+        const base = (process.env.NEXT_PUBLIC_WP_URL ?? '').replace(/\/+$/, '');
+        if (!base) {
+          throw new Error('NEXT_PUBLIC_WP_URL is not set');
+        }
+
+        // per_page=100 by default from WP function; change if you need pagination
+        // const url = `${base}/wp-json/authorpro/v1/users?per_page=100${roleFilter ? `&role=${encodeURIComponent(roleFilter)}` : ''}`;
+
+        const url = `${base}/wp-json/custom/v1/author?id=${params.id}`;
+
+        const res = await fetch(url, { signal: abortCtrl.signal, mode: 'cors' });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Fetch error ${res.status}: ${text}`);
+        }
+        const json = await res.json();
+        const data: WPUser = json.data ?? json; // in case route returns array directly
+        setAuthor(data);
+        console.log(data);
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+        
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchUsers();
+    return () => abortCtrl.abort();
+  }, []);
 
   if (!tutor) {
     return (
@@ -49,14 +115,14 @@ export default function TutorProfilePage() {
                 <CardContent className="p-6">
                   <div className="flex items-start gap-6">
                     <Avatar className="h-24 w-24">
-                      <AvatarImage src={tutor.avatar} alt={tutor.name} />
+                      <AvatarImage src={author?.avatar} alt={author?.name} />
                       <AvatarFallback className="text-lg">
                         {tutor.name.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1">
-                      <h1 className="text-3xl font-bold mb-2">{tutor.name}</h1>
+                      <h1 className="text-3xl font-bold mb-2">{author?.name}</h1>
                       
                       <div className="flex items-center gap-4 mb-4">
                         <div className="flex items-center gap-1">
@@ -66,7 +132,7 @@ export default function TutorProfilePage() {
                         </div>
                         <div className="flex items-center gap-1 text-gray-600">
                           <MapPin className="h-4 w-4" />
-                          <span>{tutor.location}</span>
+                          <span>{author?.location}</span>
                         </div>
                         <div className="flex items-center gap-1 text-gray-600">
                           <Clock className="h-4 w-4" />
@@ -75,12 +141,13 @@ export default function TutorProfilePage() {
                       </div>
 
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {tutor.subjects.map((subject) => (
-                          <Badge key={subject} variant="secondary">
-                            {subject}
-                          </Badge>
-                        ))}
-                      </div>
+  {author?.subjects?.map((subject) => (
+    <Badge key={subject.trim()} variant="secondary">
+      {subject.trim()}
+    </Badge>
+  ))}
+</div>
+
 
                       <div className="flex items-center gap-2 text-green-600">
                         <div className="h-2 w-2 bg-green-600 rounded-full"></div>
@@ -97,7 +164,7 @@ export default function TutorProfilePage() {
                   <CardTitle>About Me</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600 leading-relaxed">{tutor.bio}</p>
+                  <p className="text-gray-600 leading-relaxed">{author?.bio}</p>
                 </CardContent>
               </Card>
 
@@ -111,21 +178,21 @@ export default function TutorProfilePage() {
                     <GraduationCap className="h-5 w-5 text-blue-600" />
                     <div>
                       <p className="font-medium">Education</p>
-                      <p className="text-gray-600">{tutor.education}</p>
+                      <p className="text-gray-600">{author?.education}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Award className="h-5 w-5 text-blue-600" />
                     <div>
                       <p className="font-medium">Teaching Experience</p>
-                      <p className="text-gray-600">{tutor.experience}</p>
+                      <p className="text-gray-600">{author?.teaching_experience}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Globe className="h-5 w-5 text-blue-600" />
                     <div>
                       <p className="font-medium">Languages</p>
-                      <p className="text-gray-600">{tutor.languages.join(', ')}</p>
+                      <p className="text-gray-600">{author?.languages}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -174,7 +241,7 @@ export default function TutorProfilePage() {
                 <CardContent className="p-6">
                   <div className="text-center mb-6">
                     <div className="text-3xl font-bold text-blue-600 mb-2">
-                      ${tutor.hourlyRate}/hr
+                      ${author?.hourly_rate}/hr
                     </div>
                     <p className="text-gray-600">Starting rate</p>
                   </div>
@@ -220,7 +287,7 @@ export default function TutorProfilePage() {
       <BookingModal 
         isOpen={showBookingModal}
         onClose={() => setShowBookingModal(false)}
-        tutor={tutor}
+        tutor={author!}
       />
       
       <Footer />

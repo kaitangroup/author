@@ -40,7 +40,7 @@ export default function ProfileEditPage() {
       try {
         const token = localStorage.getItem('wpToken'); // or however you store JWT
         console.log("Fetching profile with token:", token);
-        const res = await fetch(`{apiUrl}/wp-json/custom/v1/profile`, {
+        const res = await fetch(`${apiUrl}/wp-json/custom/v1/profile`, {
           headers: {
             Authorization: `Bearer ${token}`, // if using JWT authentication
             'Content-Type': 'application/json',

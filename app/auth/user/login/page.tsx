@@ -174,7 +174,7 @@ export default function StudentLoginPage() {
                       {socialLoading === "google" ? "Please wait…" : "Log in with Google"}
                     </Button>
 
-                    <Button
+                    {/* <Button
                       type="button"
                       variant="outline"
                       className="w-full h-12 border-gray-300 hover:bg-gray-50 flex items-center justify-center"
@@ -183,7 +183,7 @@ export default function StudentLoginPage() {
                     >
                       <FaApple className="w-5 h-5 mr-2 text-black" />
                       {socialLoading === "apple" ? "Please wait…" : "Log in with Apple"}
-                    </Button>
+                    </Button> */}
 
                     <Button
                       type="button"

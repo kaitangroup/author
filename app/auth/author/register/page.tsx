@@ -149,7 +149,7 @@ export default function TutorRegisterPage() {
               </div>
 
               {/* Signup Card */}
-              <Card className="bg-white shadow-sm max-w-md mx-auto lg:mx-0">
+              <Card className="bg-white shadow-sm  mx-auto lg:mx-0">
                 <CardHeader className="text-center">
                   <CardTitle className="text-2xl font-bold text-gray-900">Welcome to TutorConnect!</CardTitle>
                   <p className="text-gray-600">Apply to become a tutor and start earning.</p>

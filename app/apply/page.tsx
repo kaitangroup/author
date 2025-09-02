@@ -89,18 +89,19 @@ export default function TutorApplicationPage() {
 
         if (!res.ok) throw new Error('Failed to fetch profile');
         const data = await res.json();
-
+console.log(data);
         setProfileData(prev => ({
           ...prev,
           firstName: data.first_name || '',
           lastName: data.last_name || '',
           email: data.email || '',
           phone: data.phone || '',
-          bio: data.description || '',
+          bio: data.bio || '',
           degree: data.degree || '',
           location: data.location || '',
           hourlyRate: data.hourlyRate || '',
           subjects: data.subjects || [],
+          dateOfBirth: data.dateOfBirth || '',
           education: data.education || '',
           teachingExperience: data.experience || '',
           experience: data.experience || '',
@@ -108,6 +109,14 @@ export default function TutorApplicationPage() {
           teachingStyle: data.teachingStyle || '',
           availability: data.availability || [],
           avatar: data.avatar_urls?.['96'] || '',
+          agreeToBackground: data.agreeToBackground || false,
+          agreeToTerms: data.agreeToTerms || false,
+          university: data.university || '',
+          graduationYear: data.graduationYear || '',
+          tutoringExperience: data.tutoringExperience || '',
+          whyTutor: data.whyTutor || '',
+          references: data.references || '',
+          
         }));
       } catch (err) {
         console.error(err);
@@ -143,6 +152,7 @@ export default function TutorApplicationPage() {
   ];
 
   const handleInputChange = (field: keyof ProfileData, value: any) => {
+    console.log(field, value);
     setProfileData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -283,7 +293,11 @@ export default function TutorApplicationPage() {
                 <Input
                   id="dateOfBirth"
                   type="date"
-                  value={profileData?.dateOfBirth}
+                  value={
+                    profileData?.dateOfBirth
+                      ? new Date(profileData.dateOfBirth).toISOString().split("T")[0]
+                      : ""
+                  }
                   onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
                   required
                 />
