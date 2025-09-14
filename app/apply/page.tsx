@@ -89,7 +89,7 @@ export default function TutorApplicationPage() {
 
         if (!res.ok) throw new Error('Failed to fetch profile');
         const data = await res.json();
-console.log(data);
+        console.log(data);
         setProfileData(prev => ({
           ...prev,
           firstName: data.first_name || '',
@@ -99,22 +99,22 @@ console.log(data);
           bio: data.bio || '',
           degree: data.degree || '',
           location: data.location || '',
-          hourlyRate: data.hourlyRate || '',
+          hourlyRate: data.hourly_rate || '',
           subjects: data.subjects || [],
-          dateOfBirth: data.dateOfBirth || '',
+          dateOfBirth: data.date_of_birth || '',
           education: data.education || '',
-          teachingExperience: data.experience || '',
+          teachingExperience: data.teaching_experience || '',
           experience: data.experience || '',
           languages: data.languages || [],
-          teachingStyle: data.teachingStyle || '',
+          teachingStyle: data.teaching_style || '',
           availability: data.availability || [],
           avatar: data.avatar_urls?.['96'] || '',
-          agreeToBackground: data.agreeToBackground || false,
-          agreeToTerms: data.agreeToTerms || false,
+          agreeToBackground: data.agree_to_background || false,
+          agreeToTerms: data.agree_to_terms || false,
           university: data.university || '',
-          graduationYear: data.graduationYear || '',
-          tutoringExperience: data.tutoringExperience || '',
-          whyTutor: data.whyTutor || '',
+          graduationYear: data.graduation_year || '',
+          tutoringExperience: data.tutoring_experience || '',
+          whyTutor: data.why_tutor || '',
           references: data.references || '',
           
         }));
@@ -293,11 +293,9 @@ console.log(data);
                 <Input
                   id="dateOfBirth"
                   type="date"
-                  value={
-                    profileData?.dateOfBirth
-                      ? new Date(profileData.dateOfBirth).toISOString().split("T")[0]
-                      : ""
-                  }
+                  value={profileData?.dateOfBirth || ""}
+
+                  
                   onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
                   required
                 />
@@ -326,7 +324,11 @@ console.log(data);
 
             <div>
               <Label htmlFor="education">Highest Level of Education *</Label>
-              <Select onValueChange={(value) => handleInputChange('education', value)}>
+              <Select
+                value={profileData.education}
+                onValueChange={(value) => handleInputChange('education', value)}
+              >
+
                 <SelectTrigger>
                   <SelectValue placeholder="Select your education level" />
                 </SelectTrigger>
@@ -375,9 +377,15 @@ console.log(data);
               />
             </div>
 
+            
+
             <div>
               <Label htmlFor="teachingExperience">Teaching Experience</Label>
-              <Select onValueChange={(value) => handleInputChange('teachingExperience', value)}>
+              <Select
+                value={profileData.teachingExperience}
+                onValueChange={(value) => handleInputChange('teachingExperience', value)}
+              >
+
                 <SelectTrigger>
                   <SelectValue placeholder="Select your teaching experience" />
                 </SelectTrigger>
@@ -392,9 +400,16 @@ console.log(data);
               </Select>
             </div>
 
+
+
             <div>
               <Label htmlFor="tutoringExperience">Tutoring Experience</Label>
-              <Select onValueChange={(value) => handleInputChange('tutoringExperience', value)}>
+              {/* <Select onValueChange={(value) => handleInputChange('tutoringExperience', value)}> */}
+              <Select
+                value={profileData.tutoringExperience}
+                onValueChange={(value) => handleInputChange('tutoringExperience', value)}
+              >
+
                 <SelectTrigger>
                   <SelectValue placeholder="Select your tutoring experience" />
                 </SelectTrigger>
