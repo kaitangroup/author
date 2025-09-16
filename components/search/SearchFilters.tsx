@@ -7,13 +7,42 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
+
+
+type WPUser = {
+  id: number;
+  name: string;
+  slug: string;
+  roles: string[];
+  description?: string;
+  avatar?: string;
+  website?: string;
+  degree?: string;
+  hourly_rate?: string;
+  subjects?: string[] | string;
+  education?: string;
+  experience?: string;
+  availability?: string[];
+  teaching_experience?: string;
+  teaching_style?: string;
+  date_of_birth?: string;
+  university?: string;
+  graduation_year?: string;
+  languages?: string;
+  tutoring_experience?: string;
+  why_tutor?: string;
+  references?: string;
+  location_city_state?: string;
+  rating?: number;
+  review_count?: number;
+};
+
+
+
+
 const subjects = [
   'Romance', 'Science Fiction & Fantasy', 'Mystery, Thriller & Suspense', 'Self-help', 'History', 
   'Children Books'];
-
-
-
-
 
 
 
@@ -51,7 +80,7 @@ export function SearchFilters({ filters, onFiltersChange }: SearchFiltersProps) 
       availability: 'any',
     });
   };
-
+ 
   return (
     <Card>
       <CardHeader>

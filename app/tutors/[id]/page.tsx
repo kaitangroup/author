@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';   // ← added useRouter
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -9,12 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { BookingModal } from '@/components/booking/BookingModal';
-import { 
-  Star, MapPin, Clock, MessageCircle, Calendar, 
-  GraduationCap, Globe, Award 
-} from 'lucide-react';
+import { Star, MapPin, Clock, MessageCircle, Calendar, GraduationCap, Globe, Award } from 'lucide-react';
 import { mockTutors } from '@/lib/mockData';
-import { useParams } from 'next/navigation';
+
 type WPUser = {
   id: number;
   name: string;
@@ -45,51 +43,37 @@ type WPUser = {
 
 export default function TutorProfilePage() {
   const params = useParams();
+  const router = useRouter();                     // ← init router
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [author, setAuthor] = useState<WPUser>();
   const [loading, setLoading] = useState<boolean>(false);
   
-  // Find tutor by ID (in real app, this would be an API call)
   const tutor = mockTutors.find(t => t.id == '1');
-  // Fetch users from WP REST endpoint
+
   useEffect(() => {
     const abortCtrl = new AbortController();
     async function fetchUsers() {
       setLoading(true);     
-
       try {
         const base = (process.env.NEXT_PUBLIC_WP_URL ?? '').replace(/\/+$/, '');
-        if (!base) {
-          throw new Error('NEXT_PUBLIC_WP_URL is not set');
-        }
-
-        // per_page=100 by default from WP function; change if you need pagination
-        // const url = `${base}/wp-json/authorpro/v1/users?per_page=100${roleFilter ? `&role=${encodeURIComponent(roleFilter)}` : ''}`;
-
+        if (!base) throw new Error('NEXT_PUBLIC_WP_URL is not set');
         const url = `${base}/wp-json/custom/v1/author?id=${params.id}`;
-
         const res = await fetch(url, { signal: abortCtrl.signal, mode: 'cors' });
         if (!res.ok) {
           const text = await res.text();
           throw new Error(`Fetch error ${res.status}: ${text}`);
         }
         const json = await res.json();
-        const data: WPUser = json.data ?? json; // in case route returns array directly
+        const data: WPUser = json.data ?? json;
         setAuthor(data);
-        console.log(data);
-      } catch (err: any) {
-        if (err.name === 'AbortError') return;
-        
+      } catch (_) {
       } finally {
         setLoading(false);
       }
     }
-
-    
-
     fetchUsers();
     return () => abortCtrl.abort();
-  }, []);
+  }, [params.id]);
 
   if (!author || !tutor) {
     return (
@@ -143,13 +127,12 @@ export default function TutorProfilePage() {
                       </div>
 
                       <div className="flex flex-wrap gap-2 mb-4">
-  {author?.subjects?.map((subject) => (
-    <Badge key={subject.trim()} variant="secondary">
-      {subject.trim()}
-    </Badge>
-  ))}
-</div>
-
+                        {author?.subjects?.map((subject) => (
+                          <Badge key={subject.trim()} variant="secondary">
+                            {subject.trim()}
+                          </Badge>
+                        ))}
+                      </div>
 
                       <div className="flex items-center gap-2 text-green-600">
                         <div className="h-2 w-2 bg-green-600 rounded-full"></div>
@@ -215,11 +198,7 @@ export default function TutorProfilePage() {
                               {[...Array(5)].map((_, i) => (
                                 <Star
                                   key={i}
-                                  className={`h-4 w-4 ${
-                                    i < review.rating 
-                                      ? 'fill-yellow-400 text-yellow-400' 
-                                      : 'text-gray-300'
-                                  }`}
+                                  className={`h-4 w-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
                                 />
                               ))}
                             </div>
@@ -257,7 +236,11 @@ export default function TutorProfilePage() {
                       Book a Lesson
                     </Button>
                     
-                    <Button variant="outline" className="w-full">
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => router.push(`/messages?to=${author.id}`)}   // ← GO TO MESSAGES WITH to=<id>
+                    >
                       <MessageCircle className="mr-2 h-4 w-4" />
                       Send Message
                     </Button>
@@ -296,4 +279,3 @@ export default function TutorProfilePage() {
     </div>
   );
 }
-

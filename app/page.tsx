@@ -30,12 +30,12 @@ export default function HomePage() {
                   className="h-12 text-lg"
                 />
               </div>
-              <div className="flex-1">
+              {/* <div className="flex-1">
                 <Input 
                   placeholder="Your location or online" 
                   className="h-12 text-lg"
                 />
-              </div>
+              </div> */}
               <Link href="/search">
                 <Button size="lg" className="h-12 px-8 bg-blue-600 hover:bg-blue-700">
                   <Search className="mr-2 h-5 w-5" />
