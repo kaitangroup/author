@@ -1,3 +1,7 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,6 +11,15 @@ import { Search, BookOpen, MessageCircle, Star, Users, Clock } from 'lucide-reac
 import Link from 'next/link';
 
 export default function HomePage() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const router = useRouter();
+
+  const handleSearch = () => {
+    if (searchTerm.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchTerm)}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -28,31 +41,23 @@ export default function HomePage() {
                 <Input 
                   placeholder="What subject do you want to learn?" 
                   className="h-12 text-lg"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSearch();
+                  }}
                 />
               </div>
-              {/* <div className="flex-1">
-                <Input 
-                  placeholder="Your location or online" 
-                  className="h-12 text-lg"
-                />
-              </div> */}
-              <Link href="/search">
-                <Button size="lg" className="h-12 px-8 bg-blue-600 hover:bg-blue-700">
-                  <Search className="mr-2 h-5 w-5" />
-                  Find Authors
-                </Button>
-              </Link>
+              <Button
+                size="lg"
+                className="h-12 px-8 bg-blue-600 hover:bg-blue-700"
+                onClick={handleSearch}
+              >
+                <Search className="mr-2 h-5 w-5" />
+                Find Authors
+              </Button>
             </div>
           </div>
-
-
-
-
-
-
-
-
-
 
           <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-600">
             <span className="bg-blue-100 px-3 py-1 rounded-full">Romance</span>

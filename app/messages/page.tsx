@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Search, Send, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Search, Send, MoreVertical, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -38,7 +38,7 @@ function initials(name?: string) {
   return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || name[0]?.toUpperCase() || '?';
 }
 
-/* ======== Local API helpers (match WP plugin routes) ======== */
+/* ======== Local API helpers ======== */
 async function ensureOk(res: Response, label: string) {
   if (!res.ok) {
     const t = await res.text().catch(() => '');
@@ -67,11 +67,19 @@ async function deleteMessageAPI(id: number, token: string, otherUserId: number) 
   return res.json() as Promise<{ status: string; id: number }>;
 }
 
+function onComposerKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+  if (e.nativeEvent?.isComposing) return;
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    e.currentTarget.form?.requestSubmit();
+  }
+}
+
 /* ================= Page ================= */
 export default function MessagesPage() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
-  const onlyUserParam = searchParams.get('to');                 // ← /messages?to=123
+  const onlyUserParam = searchParams.get('to'); // /messages?to=123
   const onlyUserId = onlyUserParam ? Number(onlyUserParam) : null;
 
   // আমার ইউজার (/me)
@@ -82,7 +90,7 @@ export default function MessagesPage() {
   // লেফট সাইড
   const [users, setUsers] = useState<WPUserLite[]>([]);
   const [conversations, setConversations] = useState<ConvWithPresence[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(onlyUserId);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   // রাইট সাইড (চ্যাট)
   const [messages, setMessages] = useState<ACMessage[]>([]);
@@ -91,7 +99,7 @@ export default function MessagesPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [newMessage, setNewMessage] = useState('');
-  
+
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const composeRef = useRef<HTMLTextAreaElement | null>(null);
@@ -101,7 +109,7 @@ export default function MessagesPage() {
   const [menuFor, setMenuFor] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  // unread ট্র্যাকিং (লোকাল): partnerId -> ISO timestamp last seen
+  // unread ট্র্যাকিং
   const [lastSeenAt, setLastSeenAt] = useState<Record<string, string>>(() => {
     if (typeof window === 'undefined') return {};
     try { return JSON.parse(localStorage.getItem('ac_last_seen') || '{}'); } catch { return {}; }
@@ -116,14 +124,10 @@ export default function MessagesPage() {
     setToken(localStorage.getItem('wpToken'));
   }, [session, status]);
 
-  /* ===== 0) Load current user (/me) ===== */
+  /* ===== /me ===== */
   useEffect(() => {
     let alive = true;
-
-    if (!token) {
-      setMyId(null); setMyName(''); setMyAvatar('');
-      return () => { alive = false; };
-    }
+    if (!token) { setMyId(null); setMyName(''); setMyAvatar(''); return () => { alive = false; }; }
 
     (async () => {
       try {
@@ -146,7 +150,7 @@ export default function MessagesPage() {
     return () => { alive = false; };
   }, [token]);
 
-  /* ===== 1) Load users for sidebar ===== */
+  /* ===== Users (sidebar) ===== */
   useEffect(() => {
     if (!token) return;
     let mounted = true;
@@ -166,8 +170,11 @@ export default function MessagesPage() {
 
         if (onlyUserId) {
           const target = list.find(u => u.id === onlyUserId);
-          setUsers(target ? [target] : []);
-          setSelectedUserId(onlyUserId);
+          const merged: WPUserLite[] = target
+            ? [target, ...list.filter(u => u.id !== onlyUserId)]
+            : [{ id: onlyUserId, name: '(loading...)', avatar: '' }, ...list];
+          setUsers(merged);
+          // setSelectedUserId(prev => prev ?? onlyUserId);
         } else {
           setUsers(list);
         }
@@ -180,7 +187,7 @@ export default function MessagesPage() {
     return () => { mounted = false; };
   }, [token, onlyUserId]);
 
-  /* ===== 2) Build conversation list (শুধু যাদের সাথে চ্যাট আছে) ===== */
+  /* ===== Conversations (only with messages) ===== */
   useEffect(() => {
     if (!token || users.length === 0) return;
     let mounted = true;
@@ -191,25 +198,18 @@ export default function MessagesPage() {
           users.map(async (u) => {
             const data = await acGetMessages(u.id, 'ASC', token);
             const msgs: ACMessage[] = data.messages || [];
-
-            // কেবল যাদের সাথে মেসেজ আছে, তাদের রাখি (তবে query তে to= থাকলে তাকে রাখবো)
             const hasMessages = msgs.length > 0;
-            if (!hasMessages && u.id !== onlyUserId) {
-              return null;
-            }
+            if (!hasMessages && u.id !== onlyUserId) return null;
 
             const conv = buildConversationFromMessages(u.id, u.name, u.avatar, msgs);
             const last = msgs[msgs.length - 1];
             const lastISO = conv.timestamp ? new Date(conv.timestamp) : null;
             const isActive = !!lastISO && Date.now() - lastISO.getTime() <= 5 * 60 * 1000;
 
-            // unread: last msg is from partner AND lastSeen < last.timestamp
             let unread = false;
             if (last && myId != null && last.from !== myId && last.timestamp) {
               const seenISO = lastSeenAt[String(u.id)];
-              if (!seenISO || new Date(seenISO) < new Date(last.timestamp)) {
-                unread = true;
-              }
+              if (!seenISO || new Date(seenISO) < new Date(last.timestamp)) unread = true;
             }
 
             return { ...conv, isActive, hasMessages, unread } as ConvWithPresence;
@@ -219,7 +219,6 @@ export default function MessagesPage() {
         if (!mounted) return;
 
         const filtered = (items.filter(Boolean) as ConvWithPresence[])
-          // সর্বশেষ মেসেজ আগে
           .sort((a, b) => {
             const ta = a.timestamp ? Date.parse(a.timestamp) : 0;
             const tb = b.timestamp ? Date.parse(b.timestamp) : 0;
@@ -227,11 +226,9 @@ export default function MessagesPage() {
           });
 
         setConversations(filtered);
-
-        // যদি selected না থাকে, লিস্টের প্রথমজনকে সিলেক্ট করি
-        if (!selectedUserId && filtered[0]?.userId) {
-          setSelectedUserId(filtered[0].userId);
-        }
+        // if (!selectedUserId && filtered[0]?.userId) {
+        //   setSelectedUserId(filtered[0].userId);
+        // }
       } catch (e: any) {
         console.error(e);
         toast.error(e?.message || 'Failed to load conversations');
@@ -239,9 +236,9 @@ export default function MessagesPage() {
     })();
 
     return () => { mounted = false; };
-  }, [token, users, myId, lastSeenAt, onlyUserId]); // myId/lastSeenAt থাকলে unread রিকম্পিউট হবে
+  }, [token, users, myId, lastSeenAt, onlyUserId, selectedUserId]);
 
-  /* ===== 3) Load selected thread + polling ===== */
+  /* ===== Thread load + polling ===== */
   useEffect(() => {
     if (selectedUserId == null || !token) return;
     const userId = selectedUserId;
@@ -262,6 +259,7 @@ export default function MessagesPage() {
     };
 
     loadThread(true);
+
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(() => loadThread(false), 5000);
 
@@ -271,25 +269,20 @@ export default function MessagesPage() {
     };
   }, [selectedUserId, token]);
 
-  /* ===== 3.1) এই থ্রেডটা দেখা হলে unread→read (local) ===== */
+  /* ===== unread → read ===== */
   useEffect(() => {
     if (!selectedUserId) return;
     if (!messages.length) return;
     const last = messages[messages.length - 1];
     if (!last?.timestamp) return;
 
-    // দেখলেই seen আপডেট
-    setLastSeenAt((prev) => {
-      const next = { ...prev, [String(selectedUserId)]: last.timestamp! };
-      return next;
-    });
-    // সাইডবারে unread false করে দেই
+    setLastSeenAt((prev) => ({ ...prev, [String(selectedUserId)]: last.timestamp! }));
     setConversations((prev) =>
       prev.map((c) => (c.userId === selectedUserId ? { ...c, unread: false } : c))
     );
   }, [messages, selectedUserId]);
 
-  /* ===== 4) Send / Update (one handler) ===== */
+  /* ===== Send / Update ===== */
   async function handleSendMessage(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedUserId || !token || myId == null) return;
@@ -297,14 +290,11 @@ export default function MessagesPage() {
     const text = newMessage.trim();
     if (!text) return;
 
-    // EDIT MODE → update
     if (editingId) {
       try {
         setSending(true);
         const r = await updateMessageAPI(editingId, text, token, selectedUserId);
-        setMessages(prev =>
-          prev.map(m => m.id === editingId ? { ...m, id: r.id, content: r.content } : m)
-        );
+        setMessages(prev => prev.map(m => (m.id === editingId ? { ...m, id: r.id, content: r.content } : m)));
         setEditingId(null);
         setNewMessage('');
         toast.success('Message updated');
@@ -317,7 +307,6 @@ export default function MessagesPage() {
       return;
     }
 
-    // SEND MODE → send new
     setSending(true);
     const tempId = Date.now();
     const optimistic: ACMessage = {
@@ -333,8 +322,6 @@ export default function MessagesPage() {
       await acSendMessage(selectedUserId, newMessage, token);
       setNewMessage('');
       toast.success('Message sent!');
-
-      // Refreshing will also update the sidebar's time/order
       const convData = await acGetMessages(selectedUserId, 'ASC', token);
       setMessages(convData.messages || []);
     } catch (e: any) {
@@ -346,7 +333,7 @@ export default function MessagesPage() {
     }
   }
 
-  /* ===== 4.1) Delete message ===== */
+  /* ===== Delete ===== */
   async function handleDelete(messageId: number) {
     if (!token || !selectedUserId) return;
     try {
@@ -361,7 +348,7 @@ export default function MessagesPage() {
     }
   }
 
-  /* ===== 4.2) Edit → put text in compose box ===== */
+  /* ===== Edit helpers ===== */
   function startEdit(m: ACMessage) {
     setEditingId(m.id);
     const plain = m.content.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '');
@@ -369,18 +356,14 @@ export default function MessagesPage() {
     setMenuFor(null);
     setTimeout(() => composeRef.current?.focus(), 0);
   }
-  function cancelEdit() {
-    setEditingId(null);
-    setNewMessage('');
-  }
+  function cancelEdit() { setEditingId(null); setNewMessage(''); }
 
-  /* ===== 5) Auto-scroll ===== */
+  /* ===== UI niceties ===== */
   useEffect(() => {
     if (!scrollRef.current) return;
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  /* ===== Outside click → close menu ===== */
   useEffect(() => {
     function onClick(e: MouseEvent) {
       const el = e.target as HTMLElement;
@@ -390,7 +373,6 @@ export default function MessagesPage() {
     return () => document.removeEventListener('click', onClick);
   }, []);
 
-  /* ===== 6) Sidebar filter (search + already computed list) ===== */
   const filteredConversations = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     const base = conversations;
@@ -400,37 +382,37 @@ export default function MessagesPage() {
 
   const selectedConv = conversations.find(c => c.userId === selectedUserId);
   const selectedName = selectedConv?.participant || users.find(u => u.id === selectedUserId)?.name || '';
-  const selectedAvatar = selectedConv?.avatar || '';
+  const selectedAvatar = selectedConv?.avatar || users.find(u => u.id === selectedUserId)?.avatar || '';
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="py-8 px-4">
+      <div className="py-4 px-2 sm:py-8 sm:px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Messages</h1>
-            <p className="text-gray-600">Communicate with your tutors and students.</p>
+          <div className="mb-4 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-1">Messages</h1>
+            <p className="text-gray-600 text-sm sm:text-base">Communicate with your tutors and students.</p>
           </div>
 
-          {/* HEIGHT + SCROLL */}
-          <div className="grid lg:grid-cols-3 gap-6 h-[calc(100vh-220px)] min-h-[520px] min-h-0">
-            {/* Left: Conversations */}
-            <div className="lg:col-span-1 min-h-0">
+          {/* 📱 Mobile-first: list OR chat; 🖥️ Desktop: split view */}
+          <div
+            className="min-h-0 h-[calc(100dvh-220px)] grid lg:grid-cols-3 gap-4 sm:gap-6"
+          >
+            {/* Left: Conversations (hide on mobile when a chat is open) */}
+            <div className={`min-h-0 ${selectedUserId ? 'hidden lg:block' : 'block'} lg:col-span-1`}>
               <Card className="h-full flex flex-col min-h-0">
-                <CardHeader>
+                <CardHeader className="sticky top-0 z-10 bg-white">
                   <CardTitle>Conversations</CardTitle>
-                  {!onlyUserId && (
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        placeholder="Search conversations..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  )}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search conversations..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
                 </CardHeader>
 
                 <CardContent className="p-0 flex-1 overflow-y-auto min-h-0">
@@ -438,20 +420,20 @@ export default function MessagesPage() {
                     {filteredConversations.map((item) => {
                       const isUnread = !!item.unread;
                       return (
-                        <div
+                        <button
                           key={item.userId}
                           onClick={() => setSelectedUserId(item.userId)}
-                          className={`p-4 cursor-pointer hover:bg-gray-50 border-b transition-colors ${
+                          className={`w-full text-left p-4 hover:bg-gray-50 border-b transition-colors ${
                             selectedUserId === item.userId ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
                           }`}
                         >
                           <div className="flex items-start gap-3">
-                            <Avatar className="h-10 w-10">
+                            <Avatar className="h-10 w-10 shrink-0">
                               <AvatarImage src={item.avatar} />
                               <AvatarFallback>{initials(item.participant)}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center justify-between gap-2">
                                 <h4 className={`text-sm flex items-center gap-2 ${isUnread ? 'font-bold' : 'font-medium'}`}>
                                   {item.participant}
                                   {item.isActive && <Badge variant="default">Active</Badge>}
@@ -466,7 +448,7 @@ export default function MessagesPage() {
                               </p>
                             </div>
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
 
@@ -478,20 +460,33 @@ export default function MessagesPage() {
               </Card>
             </div>
 
-            {/* Right: Chat */}
-            <div className="lg:col-span-2 min-h-0">
+            {/* Right: Chat (hide on mobile until a chat is selected) */}
+            <div className={`min-h-0 ${selectedUserId ? 'block' : 'hidden lg:block'} lg:col-span-2`}>
               <Card className="h-full flex flex-col min-h-0">
                 {selectedUserId ? (
                   <>
-                    <CardHeader className="border-b">
+                    {/* Sticky chat header with mobile Back */}
+                    <CardHeader className="border-b sticky top-0 z-10 bg-white">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Avatar>
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Back only on mobile */}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedUserId(null)}
+                            className="lg:hidden -ml-2 mr-1 p-2 rounded hover:bg-gray-100"
+                            aria-label="Back to list"
+                          >
+                            <ArrowLeft className="h-5 w-5" />
+                          </button>
+
+                          <Avatar className="h-10 w-10">
                             <AvatarImage src={selectedAvatar} />
                             <AvatarFallback>{initials(selectedName)}</AvatarFallback>
                           </Avatar>
-                          <div>
-                            <h3 className="font-medium">{selectedName || 'Loading…'}</h3>
+                          <div className="min-w-0">
+                            <h3 className="font-medium truncate max-w-[50vw] lg:max-w-none">
+                              {selectedName || 'Loading…'}
+                            </h3>
                             <p className="text-sm text-gray-500">
                               {selectedConv?.isActive ? 'Online' : 'Offline'}
                             </p>
@@ -503,27 +498,29 @@ export default function MessagesPage() {
                       </div>
                     </CardHeader>
 
-                    <CardContent ref={scrollRef} className="flex-1 p-4 overflow-y-auto min-h-0">
+                    {/* Messages list (scrollable) */}
+                    <CardContent
+                      ref={scrollRef}
+                      className="flex-1 p-3 sm:p-4 overflow-y-auto min-h-0 space-y-4"
+                    >
                       {loading ? (
                         <div className="text-sm text-gray-500">Loading messages…</div>
                       ) : (
-                        <div className="space-y-4">
+                        <>
                           {messages.map((m) => {
                             const isMine = myId != null && m.from === myId;
                             const open = menuFor === m.id;
 
                             return (
                               <div key={m.id} className={`group flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                                <div className="relative inline-block" data-msg-menu>
-                                  {/* bubble */}
-                                  <div className={`${isMine ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'} rounded-lg p-3 max-w-xs`}>
-                                    <p className="text-sm" dangerouslySetInnerHTML={{ __html: m.content }} />
-                                    <span className={`text-xs mt-1 block ${isMine ? 'text-blue-100' : 'text-gray-500'}`}>
-                                      {m.timestamp ?? ''}
-                                    </span>
+                                <div className="relative inline-block max-w-[80%] sm:max-w-[70%]" data-msg-menu>
+                                  <div className={`${isMine ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'} rounded-2xl px-3 py-2`}>
+                                    <p
+                                      className="text-sm leading-relaxed whitespace-pre-wrap break-words"
+                                      dangerouslySetInnerHTML={{ __html: m.content }}
+                                    />
                                   </div>
 
-                                  {/* 3-dot */}
                                   {isMine && (
                                     <button
                                       type="button"
@@ -535,7 +532,6 @@ export default function MessagesPage() {
                                     </button>
                                   )}
 
-                                  {/* menu */}
                                   {isMine && open && (
                                     <div className="absolute right-0 top-6 z-10 w-44 rounded-md border bg-white shadow-md">
                                       <button
@@ -558,28 +554,32 @@ export default function MessagesPage() {
                               </div>
                             );
                           })}
+
                           {messages.length === 0 && (
                             <div className="text-sm text-gray-500">No messages yet. Say hello 👋</div>
                           )}
-                        </div>
+                        </>
                       )}
                     </CardContent>
 
-                    <div className="border-t p-4">
+                    {/* Sticky composer */}
+                    <div className="border-t p-2 sm:p-3 sticky bottom-0 bg-white">
                       {token ? (
                         <form onSubmit={handleSendMessage} className="flex gap-2 items-end">
                           <div className="flex-1">
                             {editingId && (
                               <div className="text-xs mb-1 text-amber-600">
-                                Editing message… <button type="button" onClick={cancelEdit} className="underline">Cancel</button>
+                                Editing message…{' '}
+                                <button type="button" onClick={cancelEdit} className="underline">Cancel</button>
                               </div>
                             )}
                             <Textarea
                               ref={composeRef}
+                              onKeyDown={onComposerKeyDown}
                               value={newMessage}
                               onChange={(e) => setNewMessage(e.target.value)}
                               placeholder={editingId ? 'Edit your message…' : 'Type your message...'}
-                              className="flex-1 min-h-[40px] max-h-[120px] resize-none"
+                              className="flex-1 min-h-[40px] max-h-[140px] resize-none"
                               rows={1}
                             />
                           </div>

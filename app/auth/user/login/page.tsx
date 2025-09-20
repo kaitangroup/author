@@ -83,7 +83,7 @@ export default function StudentLoginPage() {
     setSubmitting(true);
 
     try {
-      const res = await fetch(`${apiUrl}/wp-json/jwt-auth/v1/token`, {
+      const res = await fetch(`${apiUrl}wp-json/jwt-auth/v1/token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -103,7 +103,7 @@ export default function StudentLoginPage() {
         localStorage.setItem("wpToken", data.token);
         localStorage.setItem("wpUser", data.user_display_name || formData.username);
         const token = data.token;
-        const response = await fetch(`${apiUrl}/wp-json/custom/v1/profile`, {
+        const response = await fetch(`${apiUrl}wp-json/custom/v1/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

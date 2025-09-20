@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Star, MapPin, Clock, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useRouter } from 'next/navigation';
 
 interface Tutor {
   id: string;
@@ -24,6 +25,7 @@ interface TutorCardProps {
 }
 
 export function TutorCard({ tutor }: TutorCardProps) {
+  const router = useRouter();
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardContent className="p-6">
@@ -47,7 +49,7 @@ export function TutorCard({ tutor }: TutorCardProps) {
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                <span>{tutor.responseTime}</span>
+                <span>{tutor.responseTime} hours tutoring</span>
               </div>
             </div>
           </div>
@@ -73,7 +75,7 @@ export function TutorCard({ tutor }: TutorCardProps) {
             ${tutor.hourlyRate}/hr
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
+            <Button  onClick={() => router.push(`/messages?to=${tutor.id}`)}   variant="outline" size="sm">
               <MessageCircle className="h-4 w-4 mr-1" />
               Message
             </Button>
