@@ -41,8 +41,15 @@ type WPUser = {
 
 
 const subjects = [
-  'Romance', 'Science Fiction & Fantasy', 'Mystery, Thriller & Suspense', 'Self-help', 'History', 
-  'Children Books'];
+  'Romance', 'Science Fiction & Fantasy', 'Mystery, Thriller & Suspense', 'Self-help', 'History',
+  'Childrens Books', 'Literature & Fiction', 'Biographies & Memoirs',
+  'Arts & Photography', 'Computers & Technology', 'Crafts, Hobbies & Home', 'Education & Teaching',
+  'Engineering & Transportation', 'Health, Humor & Entertainment', 'Medical Books',
+  'Politics & Social Sciences', 'Religion & Spirituality', 'Science & Math',
+  'Sports & Outdoors', 'Test Preparation', 'Travel',
+  'Editors Picks', 'Teacher Picks',
+  'Elementary', 'Middle School', 'High School', 'College'
+];
 
 
 
