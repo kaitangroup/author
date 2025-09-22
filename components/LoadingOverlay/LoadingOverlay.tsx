@@ -10,7 +10,13 @@ const DotLottiePlayer = dynamic(
   { ssr: false }
 );
 
-export default function LoadingOverlay({ fullscreen = true, size = 160 }) {
+export default function LoadingOverlay({
+  fullscreen = true,
+  size = 160,
+}: {
+  fullscreen?: boolean;
+  size?: number;
+}) {
   const inner = (
     <div className="flex items-center justify-center w-full h-full">
       <DotLottiePlayer
@@ -24,7 +30,13 @@ export default function LoadingOverlay({ fullscreen = true, size = 160 }) {
   );
 
   return fullscreen ? (
-    <div className="fixed inset-0 z-[9999] bg-white/80 backdrop-blur-sm">{inner}</div>
+    <div
+      className="fixed inset-0 z-[9999] bg-white/80 backdrop-blur-sm"
+      role="status"
+      aria-label="Loading"
+    >
+      {inner}
+    </div>
   ) : (
     inner
   );
