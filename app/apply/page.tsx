@@ -238,7 +238,7 @@ export default function TutorApplicationPage() {
 
     try {
       const token = localStorage.getItem("wpToken");
-      const res = await fetch(`${apiUrl}/wp-json/custom/v1/profile`, {
+      const res = await fetch(`${apiUrl}wp-json/custom/v1/profile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

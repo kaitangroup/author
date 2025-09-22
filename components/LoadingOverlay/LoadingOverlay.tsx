@@ -1,27 +1,31 @@
-'use client';
-import React from 'react';
-import '@dotlottie/player-component';
+"use client";
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'dotlottie-player': React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>, HTMLElement
-      > & { src?: string; autoplay?: boolean; loop?: boolean; background?: string; speed?: number; };
-    }
-  }
-}
+import dynamic from "next/dynamic";
 
-export default function LoadingOverlay({ fullscreen = true, size = 160 }: { fullscreen?: boolean; size?: number }) {
+const DotLottiePlayer = dynamic(
+  async () => {
+    await import("@dotlottie/player-component");
+    return (props: any) => <dotlottie-player {...props} />;
+  },
+  { ssr: false }
+);
+
+export default function LoadingOverlay({ fullscreen = true, size = 160 }) {
   const inner = (
     <div className="flex items-center justify-center w-full h-full">
-      <dotlottie-player src="/animations/loading.lottie" autoplay loop speed={1} style={{ width: size, height: size }} />
+      <DotLottiePlayer
+        src="/animations/loading.lottie"
+        autoplay
+        loop
+        speed={1}
+        style={{ width: size, height: size }}
+      />
     </div>
   );
-  if (!fullscreen) return inner;
-  return (
-    <div className="fixed inset-0 z-[9999] bg-white/80 backdrop-blur-sm" role="status" aria-label="Loading">
-      {inner}
-    </div>
+
+  return fullscreen ? (
+    <div className="fixed inset-0 z-[9999] bg-white/80 backdrop-blur-sm">{inner}</div>
+  ) : (
+    inner
   );
 }
