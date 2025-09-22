@@ -20,7 +20,7 @@ export default function LoadingOverlay({
   const inner = (
     <div className="flex items-center justify-center w-full h-full">
       <DotLottiePlayer
-        src="/animations/loading.lottie"
+        src="/animations/Loading.lottie"
         autoplay
         loop
         speed={1}
