@@ -1,21 +1,26 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { usePathname } from 'next/navigation';
 import LoadingOverlay from './LoadingOverlay';
 
 type Ctx = {
-  /** লোডার অন (নেস্টেড কল সাপোর্টেড) */
+  /** Turn loader on (supports nested calls) */
   start: () => void;
-  /** লোডার অফ (start যতবার, stop ততবার) */
+  /** Turn loader off (must be called as many times as start) */
   stop: () => void;
-  /** যেকোনো প্রমিজ চালান, লোডার অটো অন/অফ হবে */
+  /** Run a promise with loader automatically on/off */
   withLoader: <T>(run: () => Promise<T>, opts?: { minMs?: number }) => Promise<T>;
 };
 
-// 🔧 লোডার কমপক্ষে কত ms দেখা যাবে
 const DEFAULT_MIN_MS = 1200;
-
 const LoadingCtx = createContext<Ctx | null>(null);
 
 export function useGlobalLoading() {
@@ -27,19 +32,21 @@ export function useGlobalLoading() {
 export default function LoadingProvider({
   children,
   minMs = DEFAULT_MIN_MS,
-}: { children: React.ReactNode; minMs?: number }) {
+}: {
+  children: React.ReactNode;
+  minMs?: number;
+}) {
   const pathname = usePathname();
 
-  // 🚫 যেসব রুটে অটো-লোডার দেখাতে চাই না (messages পেজ)
+  // routes & URLs to exclude
   const EXCLUDE_PREFIXES = useMemo(() => ['/messages'], []);
-  // 🚫 যেসব API পাথ পোলিং-এর জন্য স্কিপ করবো (messages থ্রেড পোলিং)
   const EXCLUDE_URL_PATTERNS = useMemo(
     () => [/\/authorconnect\/v1\/messages(\/|\?|$)/i],
     []
   );
 
   const isExcludedRoute = useMemo(
-    () => EXCLUDE_PREFIXES.some(p => pathname?.startsWith(p)),
+    () => EXCLUDE_PREFIXES.some((p) => pathname?.startsWith(p)),
     [pathname, EXCLUDE_PREFIXES]
   );
 
@@ -54,7 +61,8 @@ export default function LoadingProvider({
     counterRef.current += 1;
     if (counterRef.current === 1) {
       lastStartAtRef.current = Date.now();
-      setVisible(true);
+      // ⚡ schedule update to next microtask → no "setState in render"
+      queueMicrotask(() => setVisible(true));
     }
   };
 
@@ -69,8 +77,10 @@ export default function LoadingProvider({
     }
   };
 
-  const withLoader = async <T,>(run: () => Promise<T>, opts?: { minMs?: number }) => {
-    // ❌ messages রুটে "ম্যানুয়াল" কলেও ওভারলে দেখাবো না (অটো বারবার যেন না আসে)
+  const withLoader = async <T,>(
+    run: () => Promise<T>,
+    opts?: { minMs?: number }
+  ): Promise<T> => {
     if (isExcludedRoute) {
       return run();
     }
@@ -88,19 +98,20 @@ export default function LoadingProvider({
     }
   };
 
-  // ✅ সব client-side fetch অটো-ট্র্যাক হবে, তবে:
-  //  - header: X-Loader=off -> স্কিপ
-  //  - messages রুট -> স্কিপ
-  //  - messages API পোলিং -> স্কিপ
+  // auto-patch fetch globally
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // 👇 only patch once
+    if ((window as any).__fetch_patched) return;
+    (window as any).__fetch_patched = true;
+
     const orig = window.fetch.bind(window);
+
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       const hdrs = new Headers((init && init.headers) || {});
       const noLoader = hdrs.get('X-Loader') === 'off';
 
-      // URL বের করি
       let urlStr = '';
       try {
         if (typeof input === 'string') urlStr = input;
@@ -108,7 +119,7 @@ export default function LoadingProvider({
         else if (typeof (input as any)?.url === 'string') urlStr = (input as any).url;
       } catch {}
 
-      const skipByUrl = EXCLUDE_URL_PATTERNS.some(re => re.test(urlStr));
+      const skipByUrl = EXCLUDE_URL_PATTERNS.some((re) => re.test(urlStr));
 
       if (noLoader || isExcludedRoute || skipByUrl) {
         return orig(input, init);
@@ -122,10 +133,6 @@ export default function LoadingProvider({
         stop();
       }
     };
-
-    return () => {
-      window.fetch = orig;
-    };
   }, [isExcludedRoute, EXCLUDE_URL_PATTERNS]);
 
   const value = useMemo<Ctx>(() => ({ start, stop, withLoader }), [isExcludedRoute, minMs]);
@@ -133,7 +140,7 @@ export default function LoadingProvider({
   return (
     <LoadingCtx.Provider value={value}>
       {children}
-      {visible && <LoadingOverlay fullscreen />} {/* গ্লোবাল ওভারলে */}
+      {visible && <LoadingOverlay fullscreen />} {/* global overlay */}
     </LoadingCtx.Provider>
   );
 }

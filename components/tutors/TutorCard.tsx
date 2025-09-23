@@ -75,15 +75,25 @@ export function TutorCard({ tutor }: TutorCardProps) {
             ${tutor.hourlyRate}/hr
           </div>
           <div className="flex gap-2">
-            <Button  onClick={() => router.push(`/messages?to=${tutor.id}`)}   variant="outline" size="sm">
-              <MessageCircle className="h-4 w-4 mr-1" />
-              Message
-            </Button>
-            <Link href={`/tutors/${tutor.id}`}>
-              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                View Profile
-              </Button>
-            </Link>
+            <Button
+  onClick={() => router.push(`/messages?to=${tutor.id}`)}
+  variant="outline"
+  size="sm"
+  className="h-7 px-2 text-xs"
+>
+  <MessageCircle className="h-3 w-3 mr-1" />
+  Message
+</Button>
+
+<Link href={`/tutors/${tutor.id}`}>
+  <Button
+    size="sm"
+    className="h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700"
+  >
+    View Profile
+  </Button>
+</Link>
+
           </div>
         </div>
       </CardContent>
