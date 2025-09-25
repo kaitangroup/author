@@ -246,7 +246,7 @@ useEffect(() => {
     messages
   );
 
-  console.log('Updating conversation preview:', conv);
+
 
   // Compute unread for the selected user based on lastSeenAt
   const last = messages[messages.length - 1];

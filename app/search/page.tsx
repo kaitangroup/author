@@ -13,8 +13,16 @@ import { TutorCard } from '@/components/tutors/TutorCard';
 type Filters = {
   subjects: string[];
   priceRange: [number, number];
+  ageRange: [number, number];
   rating: number;
+  credentials: {
+    backgroundCheck: false,
+    ixlCertified: false,
+    licensedTeacher: false,
+  };
   availability: string;
+  instantBook: boolean;
+  inPerson: boolean;
 };
 
 type WPUser = {
@@ -64,8 +72,16 @@ export default function SearchPage() {
   const [filters, setFilters] = useState<Filters>({
     subjects: [],
     priceRange: [0, 100],
+    ageRange: [18, 80],
     rating: 0,
     availability: '',
+    credentials: {
+      backgroundCheck: false,
+      ixlCertified: false,
+      licensedTeacher: false,
+    },
+    instantBook: false,
+    inPerson: false,
   });
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -96,7 +112,21 @@ export default function SearchPage() {
         }
         params.append('min_rate', String(filters.priceRange[0]));
         params.append('max_rate', String(filters.priceRange[1]));
+
+        params.append('min_age', String(filters.ageRange[0]));
+        params.append('max_age', String(filters.ageRange[1]));
         if (filters.rating > 0) params.append('rating', String(filters.rating));
+        if (filters.credentials.backgroundCheck) {
+          params.append('background_check', '1');
+        }
+        if (filters.credentials.ixlCertified) {
+          params.append('ixl_certified', '1');
+        }
+        if (filters.credentials.licensedTeacher) {
+          params.append('licensed_teacher', '1');
+        }
+        if (filters.instantBook) params.append('instant_book', '1');
+        if (filters.inPerson) params.append('in_person', '1');
         if (filters.availability && filters.availability !== 'any') {
           params.append('availability', filters.availability);
         }

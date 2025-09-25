@@ -79,6 +79,9 @@ export function Header() {
             <Link href="/about" className="text-gray-600 hover:text-blue-600 transition-colors">
               About
             </Link>
+            <Link href="/blogs" className="text-gray-600 hover:text-blue-600 transition-colors">
+              Blogs
+            </Link>
             <Link href="/contact" className="text-gray-600 hover:text-blue-600 transition-colors">
               Contact
             </Link>

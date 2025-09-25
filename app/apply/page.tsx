@@ -40,6 +40,8 @@ interface ProfileData {
   whyTutor?: string;
   references?: string;
   agreeToBackground?: boolean;
+  instantBook?: boolean;
+  AvailableInPerson?: boolean;
 }
 
 export default function TutorApplicationPage() {
@@ -74,6 +76,8 @@ export default function TutorApplicationPage() {
     whyTutor: '',
     references: '',
     agreeToBackground: false,
+    instantBook: false,
+    AvailableInPerson: false,
   });
 
   useEffect(() => {
@@ -115,6 +119,8 @@ export default function TutorApplicationPage() {
           tutoringExperience: data.tutoring_experience || '',
           whyTutor: data.why_tutor || '',
           references: data.references || '',
+          instantBook: data.instant_book || false,
+          AvailableInPerson: data.available_in_person || false,
         }));
       } catch (err) {
         console.error(err);
@@ -215,6 +221,8 @@ export default function TutorApplicationPage() {
         if (!profileData.bio) newErrors.bio = "Bio is required";
         if (!profileData.agreeToBackground) newErrors.agreeToBackground = "You must agree to background check";
         if (!profileData.agreeToTerms) newErrors.agreeToTerms = "You must agree to Terms of Service";
+        if (!profileData.instantBook) newErrors.instantBook = "You must agree to Terms of Service";
+        if (!profileData.AvailableInPerson) newErrors.AvailableInPerson = "You must agree to Terms of Service";
         break;
     }
 
@@ -542,6 +550,27 @@ export default function TutorApplicationPage() {
               <h2 className="text-2xl font-bold mb-4">Profile & Verification</h2>
               <p className="text-gray-600 mb-6">Complete your profile and agree to our verification process.</p>
             </div>
+            <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="instantBook"
+                  checked={profileData.instantBook}
+                  onCheckedChange={(checked) => handleInputChange('instantBook', checked)}
+                />
+                <Label htmlFor="instantBook" className="text-sm">
+                  I am available for Instant Book
+                </Label>
+              </div>
+
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="AvailableInPerson"
+                  checked={profileData.AvailableInPerson}
+                  onCheckedChange={(checked) => handleInputChange('AvailableInPerson', checked)}
+                />
+                <Label htmlFor="AvailableInPerson" className="text-sm">
+                  I am Available In Person
+                </Label>
+              </div>
 
             <div>
               <Label htmlFor="bio">About You *</Label>
@@ -615,6 +644,8 @@ export default function TutorApplicationPage() {
                   <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>. *
                 </Label>
               </div>
+
+            
             </div>
           </div>
         );
@@ -729,7 +760,7 @@ export default function TutorApplicationPage() {
                     type="button"  // changed from submit
                     onClick={handleSubmit}
                     className="bg-blue-600 hover:bg-blue-700"
-                    disabled={!profileData.agreeToTerms || !profileData.agreeToBackground}
+                    disabled={!profileData.agreeToTerms || !profileData.agreeToBackground  }
                   >
                     Submit Application
                   </Button>
