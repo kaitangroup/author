@@ -25,11 +25,12 @@ import {
 } from '@/lib/authorconnect';
 
 /* ================= Utils ================= */
-type WPUserLite = { id: number; name: string; avatar?: string };
+type WPUserLite = { id: number; name: string; avatar?: string , role?: string};
 type ConvWithPresence = ConversationItem & {
   isActive: boolean;
   hasMessages?: boolean;
   unread?: boolean;
+  role?: string;
 };
 
 function initials(name?: string) {
@@ -151,92 +152,120 @@ export default function MessagesPage() {
   }, [token]);
 
   /* ===== Users (sidebar) ===== */
-  useEffect(() => {
-    if (!token) return;
-    let mounted = true;
+useEffect(() => {
+  if (!token) return;
+  let mounted = true;
 
-    (async () => {
-      try {
-        const res = await fetch(`${WP_API_BASE}/authorconnect/v1/users`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        await ensureOk(res, '/users failed');
-        const data = await res.json();
-        const list: WPUserLite[] = (data?.users || []).map((u: any) => ({
-          id: u.id, name: u.name, avatar: u.avatar,
-        }));
+  (async () => {
+    try {
+      // Build URL and include ?to=<id> when present
+      const usersUrl = new URL(`${WP_API_BASE}/authorconnect/v1/users`);
+      if (onlyUserId) usersUrl.searchParams.set('to', String(onlyUserId));
 
-        if (!mounted) return;
+      const res = await fetch(usersUrl.toString(), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await ensureOk(res, '/users failed');
+      const data = await res.json();
+      const list: WPUserLite[] = (data?.users || []).map((u: any) => ({
+        id: u.id, name: u.name, avatar: u.avatar,role: u.role,
+      }));
 
-        if (onlyUserId) {
-          const target = list.find(u => u.id === onlyUserId);
-          const merged: WPUserLite[] = target
-            ? [target, ...list.filter(u => u.id !== onlyUserId)]
-            : [{ id: onlyUserId, name: '(loading...)', avatar: '' }, ...list];
-          setUsers(merged);
-          // setSelectedUserId(prev => prev ?? onlyUserId);
-        } else {
-          setUsers(list);
-        }
-      } catch (e: any) {
-        console.error(e);
-        toast.error(e?.message || 'Failed to load users');
+      if (!mounted) return;
+
+      if (onlyUserId) {
+        const target = list.find(u => u.id === onlyUserId);
+        const merged: WPUserLite[] = target
+          ? [target, ...list.filter(u => u.id !== onlyUserId)]
+          : [{ id: onlyUserId, name: '(loading...)', avatar: '' }, ...list];
+        setUsers(merged);
+        setSelectedUserId(prev => prev ?? onlyUserId);
+      } else {
+        setUsers(list);
+        setSelectedUserId(prev => prev ?? (list[0]?.id ?? null));
       }
-    })();
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || 'Failed to load users');
+    }
+  })();
 
-    return () => { mounted = false; };
-  }, [token, onlyUserId]);
+  return () => { mounted = false; };
+}, [token, onlyUserId]);
+
 
   /* ===== Conversations (only with messages) ===== */
-  useEffect(() => {
-    if (!token || users.length === 0) return;
-    let mounted = true;
+  /* ===== Conversations (sidebar metadata; no message fetching here) ===== */
+useEffect(() => {
+  if (!token || users.length === 0) return;
 
-    (async () => {
-      try {
-        const items = await Promise.all(
-          users.map(async (u) => {
-            const data = await acGetMessages(u.id, 'ASC', token);
-            const msgs: ACMessage[] = data.messages || [];
-            const hasMessages = msgs.length > 0;
-            if (!hasMessages && u.id !== onlyUserId) return null;
+  // Build shallow list from users only (no per-user message fetch).
+  const list: ConvWithPresence[] = users.map((u) => ({
+    // The ConversationItem fields that buildConversationFromMessages would set
+    userId: u.id,
+    participant: u.name,
+    role: u.role,
+    avatar: u.avatar || '',
+    lastMessage: '',       // unknown until thread is opened
+    timestamp: '',         // unknown until thread is opened
+    // Presence/flags we can best-effort guess (or leave false)
+    isActive: false,
+    hasMessages: undefined,
+    unread: false,
+  }));
 
-            const conv = buildConversationFromMessages(u.id, u.name, u.avatar, msgs);
-            const last = msgs[msgs.length - 1];
-            const lastISO = conv.timestamp ? new Date(conv.timestamp) : null;
-            const isActive = !!lastISO && Date.now() - lastISO.getTime() <= 5 * 60 * 1000;
+  // Optional: if URL param points to a user not in the fetched list yet,
+  // ensure they still appear at the top (already handled in your users effect).
+  setConversations(list);
+}, [token, users]);
 
-            let unread = false;
-            if (last && myId != null && last.from !== myId && last.timestamp) {
-              const seenISO = lastSeenAt[String(u.id)];
-              if (!seenISO || new Date(seenISO) < new Date(last.timestamp)) unread = true;
-            }
+/* ===== After messages load, backfill that conversation's preview/unread ===== */
+useEffect(() => {
+  if (!selectedUserId) return;
+  if (!messages.length) {
+    // If empty, still mark unread=false & clear preview
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.userId === selectedUserId
+          ? { ...c, lastMessage: '', timestamp: '', unread: false, hasMessages: false }
+          : c
+      )
+    );
+    return;
+  }
 
-            return { ...conv, isActive, hasMessages, unread } as ConvWithPresence;
-          })
-        );
+  const selUser = users.find((u) => u.id === selectedUserId);
+  if (!selUser) return;
 
-        if (!mounted) return;
+  // Build preview from the messages we *just* fetched for this user
+  const conv = buildConversationFromMessages(
+    selUser.id,
+    selUser.name,
+    selUser.role ?? '', 
+    selUser.avatar,
+    messages
+  );
 
-        const filtered = (items.filter(Boolean) as ConvWithPresence[])
-          .sort((a, b) => {
-            const ta = a.timestamp ? Date.parse(a.timestamp) : 0;
-            const tb = b.timestamp ? Date.parse(b.timestamp) : 0;
-            return tb - ta;
-          });
+  console.log('Updating conversation preview:', conv);
 
-        setConversations(filtered);
-        // if (!selectedUserId && filtered[0]?.userId) {
-        //   setSelectedUserId(filtered[0].userId);
-        // }
-      } catch (e: any) {
-        console.error(e);
-        toast.error(e?.message || 'Failed to load conversations');
-      }
-    })();
+  // Compute unread for the selected user based on lastSeenAt
+  const last = messages[messages.length - 1];
+  const seenISO = lastSeenAt[String(selectedUserId)];
+  let unread = false;
+  if (last && myId != null && last.from !== myId && last.timestamp) {
+    if (!seenISO || new Date(seenISO) < new Date(last.timestamp)) unread = true;
+  }
 
-    return () => { mounted = false; };
-  }, [token, users, myId, lastSeenAt, onlyUserId, selectedUserId]);
+  setConversations((prev) =>
+    prev.map((c) =>
+      c.userId === selectedUserId
+        ? { ...c, ...conv, hasMessages: true, unread }
+        : c
+    )
+  );
+}, [messages, selectedUserId, users, myId, lastSeenAt]);
+
+
 
   /* ===== Thread load + polling ===== */
   useEffect(() => {
@@ -276,7 +305,8 @@ export default function MessagesPage() {
     const last = messages[messages.length - 1];
     if (!last?.timestamp) return;
 
-    setLastSeenAt((prev) => ({ ...prev, [String(selectedUserId)]: last.timestamp! }));
+    setLastSeenAt((prev) => ({ ...prev, [String(selectedUserId)]: last.timestamp ?? '' }));
+
     setConversations((prev) =>
       prev.map((c) => (c.userId === selectedUserId ? { ...c, unread: false } : c))
     );
@@ -488,7 +518,7 @@ export default function MessagesPage() {
                               {selectedName || 'Loading…'}
                             </h3>
                             <p className="text-sm text-gray-500">
-                              {selectedConv?.isActive ? 'Online' : 'Offline'}
+                              {selectedConv?.role ? selectedConv?.role : 'hello'}
                             </p>
                           </div>
                         </div>

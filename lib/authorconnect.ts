@@ -107,6 +107,7 @@ export type ConversationItem = {
   userId: number;
   participant: string;
   avatar?: string;
+  role?: string;
   lastMessage: string;
   timestamp: string;
   unread?: boolean;
@@ -115,12 +116,14 @@ export type ConversationItem = {
 export function buildConversationFromMessages(
   otherUserId: number,
   displayName: string,
+  role: string,
   avatar: string | undefined,
   messages: ACMessage[]
 ): ConversationItem {
   const last = messages[messages.length - 1];
   return {
     userId: otherUserId,
+    role: role,
     participant: displayName,
     avatar,
     lastMessage: last ? stripHtml(last.content).slice(0, 120) : '',

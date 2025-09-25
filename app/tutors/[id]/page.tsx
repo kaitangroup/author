@@ -46,7 +46,7 @@ export default function TutorProfilePage() {
   const router = useRouter();                     // ← init router
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [author, setAuthor] = useState<WPUser>();
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   
   const tutor = mockTutors.find(t => t.id == '1');
 
@@ -75,7 +75,33 @@ export default function TutorProfilePage() {
     return () => abortCtrl.abort();
   }, [params.id]);
 
-  if (!author || !tutor) {
+
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="max-w-6xl mx-auto py-12 px-4 space-y-4">
+          {/* simple skeletons */}
+          <div className="animate-pulse grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="h-40 bg-muted rounded-2xl" />
+              <div className="h-56 bg-muted rounded-2xl" />
+              <div className="h-56 bg-muted rounded-2xl" />
+              <div className="h-56 bg-muted rounded-2xl" />
+            </div>
+            <div className="space-y-6">
+              <div className="h-64 bg-muted rounded-2xl sticky top-24" />
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!author && !tutor) {
+    
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -85,6 +111,7 @@ export default function TutorProfilePage() {
         <Footer />
       </div>
     );
+  
   }
 
   return (
@@ -103,7 +130,7 @@ export default function TutorProfilePage() {
                     <Avatar className="h-24 w-24">
                       <AvatarImage src={author?.avatar} alt={author?.name} />
                       <AvatarFallback className="text-lg">
-                        {author.name.split(' ').map(n => n[0]).join('')}
+                        {author?.name.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                     
@@ -113,8 +140,8 @@ export default function TutorProfilePage() {
                       <div className="flex items-center gap-4 mb-4">
                         <div className="flex items-center gap-1">
                           <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                          <span className="font-medium">{tutor.rating}</span>
-                          <span className="text-gray-500">({tutor.reviewCount} reviews)</span>
+                          <span className="font-medium">{tutor?.rating}</span>
+                          <span className="text-gray-500">({tutor?.reviewCount} reviews)</span>
                         </div>
                         <div className="flex items-center gap-1 text-gray-600">
                           <MapPin className="h-4 w-4" />
@@ -122,7 +149,7 @@ export default function TutorProfilePage() {
                         </div>
                         <div className="flex items-center gap-1 text-gray-600">
                           <Clock className="h-4 w-4" />
-                          <span>Responds in {tutor.responseTime}</span>
+                          <span>Responds in {tutor?.responseTime}</span>
                         </div>
                       </div>
 
@@ -136,7 +163,7 @@ export default function TutorProfilePage() {
 
                       <div className="flex items-center gap-2 text-green-600">
                         <div className="h-2 w-2 bg-green-600 rounded-full"></div>
-                        <span className="font-medium">{tutor.availability}</span>
+                        <span className="font-medium">{tutor?.availability}</span>
                       </div>
                     </div>
                   </div>
@@ -186,12 +213,12 @@ export default function TutorProfilePage() {
               {/* Reviews */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Reviews ({tutor.reviewCount})</CardTitle>
+                  <CardTitle>Reviews ({tutor?.reviewCount})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {tutor.reviews && tutor.reviews.length > 0 ? (
+                  {tutor?.reviews && tutor?.reviews.length > 0 ? (
                     <div className="space-y-4">
-                      {tutor.reviews.map((review) => (
+                      {tutor?.reviews.map((review) => (
                         <div key={review.id} className="border-b last:border-b-0 pb-4 last:pb-0">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="flex items-center">
@@ -239,7 +266,7 @@ export default function TutorProfilePage() {
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={() => router.push(`/messages?to=${author.id}`)}   // ← GO TO MESSAGES WITH to=<id>
+                      onClick={() => router.push(`/messages?to=${author?.id}`)}   // ← GO TO MESSAGES WITH to=<id>
                     >
                       <MessageCircle className="mr-2 h-4 w-4" />
                       Send Message
@@ -251,7 +278,7 @@ export default function TutorProfilePage() {
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Response time:</span>
-                      <span className="font-medium">{tutor.responseTime}</span>
+                      <span className="font-medium">{tutor?.responseTime}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Lessons taught:</span>
