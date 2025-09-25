@@ -190,7 +190,7 @@ export default function SearchPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <Input
-                  placeholder="Search by subject or tutor name..."
+                  placeholder="Search by your Author name..."
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
