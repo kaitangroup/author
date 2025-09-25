@@ -35,7 +35,7 @@ export interface WordPressConfig {
 
 // Default configuration - replace with your WordPress site URL
 const defaultConfig: WordPressConfig = {
-  baseUrl: 'http://authorproback.me/',
+  baseUrl: 'https://authorsback.rolandjones.com/wp-admin/',
   postsPerPage: 12
 };
 
