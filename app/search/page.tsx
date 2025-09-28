@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Filter } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { TutorCard } from '@/components/tutors/TutorCard';
+import { useDebounce } from 'react-use';
 
 type Filters = {
   subjects: string[];
@@ -69,6 +70,7 @@ export default function SearchPage() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [debounceSearchTerm, setDebounceSearchTerm] = useState('');
   const [filters, setFilters] = useState<Filters>({
     subjects: [],
     priceRange: [0, 100],
@@ -96,6 +98,7 @@ export default function SearchPage() {
     textarea.innerHTML = str;
     return textarea.value;
   };
+  useDebounce(()=>setDebounceSearchTerm(searchTerm), 500, [searchTerm]);
 
   useEffect(() => {
     const abortCtrl = new AbortController();
@@ -106,7 +109,7 @@ export default function SearchPage() {
         let url = `${base}/wp-json/authorpro/v1/users?per_page=6&page=${page}&role=author`;
 
         const params = new URLSearchParams();
-        if (searchTerm) params.append('search', searchTerm);
+        if (searchTerm) params.append('search', debounceSearchTerm);
         if (filters.subjects.length > 0) {
           filters.subjects.forEach((s) => params.append('subject[]', s));
         }
@@ -173,7 +176,7 @@ export default function SearchPage() {
     }
     fetchUsers();
     return () => abortCtrl.abort();
-  }, [searchTerm, filters, page]);
+  }, [debounceSearchTerm, filters, page]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -190,7 +193,7 @@ export default function SearchPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <Input
-                  placeholder="Search by your Author name..."
+                  placeholder="Search by Subject or Author name..."
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);

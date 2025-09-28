@@ -39,7 +39,7 @@ export default function HomePage() {
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <Input 
-                  placeholder="Search the name for your author?" 
+                  placeholder="Search by Subject or Author name..." 
                   className="h-12 text-lg"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
