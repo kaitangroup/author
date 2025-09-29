@@ -36,9 +36,10 @@ export default function StudentLoginPage() {
   
       // NextAuth signIn (no redirect yet)
       await signIn(provider, { callbackUrl: "/dashboard/student" });
+
+
   
-  
-      // ✅ Get session data after signIn
+     // ✅ Get session data after signIn
       // const session = await getSession();
       // console.log("🔹 NextAuth Session:", session);
   

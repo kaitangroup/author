@@ -24,27 +24,37 @@ export function Header() {
 
   // ✅ check login status on mount
   useEffect(() => {
+    if (session?.wpToken) {
+      localStorage.setItem("wpToken", session.wpToken);
+      localStorage.setItem("wpUser", session.user?.name || "");
+    }
+  
     const token = localStorage.getItem("wpToken");
     const user = localStorage.getItem("wpUser");
     const profiledata = localStorage.getItem("wpUserdata");
+  
+    console.log("Session:", session);
+  
     setWpUser(user);
+  
     if (profiledata) {
-      const profile = JSON.parse(profiledata);
-      if (profile.role === 'author') {
-        setUserType('author');
-        setProfileEditLink('apply');
-      } else {
-        setUserType('student');
-        setProfileEditLink('profile/edit');
+      try {
+        const profile = JSON.parse(profiledata);
+        if (profile.role === "author") {
+          setUserType("author");
+          setProfileEditLink("apply");
+        } else {
+          setUserType("student");
+          setProfileEditLink("profile/edit");
+        }
+      } catch (e) {
+        console.error("Invalid wpUserdata JSON", e);
       }
     }
-
-    if (token || session) {
-      setIsLoggedIn(true);
-    } else {
-      setIsLoggedIn(false);
-    }
+  
+    setIsLoggedIn(!!(token || session));
   }, [session, status]);
+  
 
   // ✅ handle logout
   const handleLogout = async () => {
