@@ -6,8 +6,9 @@ import { io, Socket } from "socket.io-client";
 
 /* ---------- Types ---------- */
 type PeerInfo = { pc: RTCPeerConnection; stream: MediaStream; name?: string };
-type Message = { name?: string; from?: string; text: string };
+type Message = { name?: string; from?: string; text?: string; attachment?: Attachment };
 type Participant = { id: string; name?: string };
+type Attachment = { url: string; name: string; type: string; size: number };
 
 type RoomPageProps = {
   params: { code: string };
@@ -32,6 +33,14 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
 
+  // Recording refs
+  const stageCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const stageVideoRef = useRef<HTMLVideoElement | null>(null); // big stage <video>
+  const drawRafRef = useRef<number | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
   // State
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [peers, setPeers] = useState<Record<string, PeerInfo>>({});
@@ -54,15 +63,18 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   const [warned5m, setWarned5m] = useState(false);
   const endPostedRef = useRef(false);
 
+  // Recording UI state
+  const [recording, setRecording] = useState(false);
+
   /* ==========================================================
      Socket + WebRTC
      ========================================================== */
   useEffect(() => {
     const socket = io(SOCKET_URL || (typeof window !== "undefined" ? window.location.origin : ""), {
-      // let Socket.IO choose polling → upgrade for best compatibility behind proxies
       auth: { name },
       path: "/socket.io",
       timeout: 10000,
+      // default transports (polling -> upgrade) are most robust behind proxies
     });
     socketRef.current = socket;
 
@@ -99,8 +111,7 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
           copy[id].stream = remoteStream;
           return copy;
         });
-        // First remote goes to stage by default
-        setStageId((curr) => curr ?? id);
+        setStageId((curr) => curr ?? id); // first remote to stage
         startRemoteAudioMonitor(id, remoteStream);
       };
 
@@ -155,14 +166,11 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
     socket.on("participants", ({ participants: list }: { participants: Participant[] }) => {
       setParticipants(list);
     });
-     socket.on("chat", (m: Message) => {
-         setMessages((prev) => [...prev, m]);
-         if (!(panelOpen && panelTab === "chat")) {
-           setUnreadChat((c) => c + 1);
-           // Optionally auto-open on first incoming message
-           // setPanelTab("chat"); setPanelOpen(true);
-         }
-       });
+
+    socket.on("chat", (m: Message) => {
+      setMessages((prev) => [...prev, m]);
+      if (!(panelOpen && panelTab === "chat")) setUnreadChat((c) => c + 1);
+    });
 
     // Signaling
     socket.on("need-offer", async ({ targetId }: { targetId: string }) => {
@@ -314,6 +322,142 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   }
 
   /* ==========================================================
+     Recording helpers
+     ========================================================== */
+  function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function buildComposedStream(): MediaStream | null {
+    const stageVideo = stageVideoRef.current;
+    const pipVideo = localVideoRef.current;
+    if (!stageVideo) return null;
+
+    // Canvas
+    const canvas = stageCanvasRef.current ?? document.createElement("canvas");
+    stageCanvasRef.current = canvas;
+
+    // Use the stage element size as a hint
+    const rect = stageVideo.getBoundingClientRect();
+    const W = Math.max(640, Math.floor(rect.width) || 1280);
+    const H = Math.max(360, Math.floor(rect.height) || 720);
+    canvas.width = W;
+    canvas.height = H;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    const draw = () => {
+      try {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, W, H);
+        if (stageVideo.readyState >= 2) ctx.drawImage(stageVideo, 0, 0, W, H);
+        if (pipVideo && pipVideo.readyState >= 2) {
+          const pipW = Math.floor(W * 0.25);
+          const pipH = Math.floor(pipW / (16 / 9));
+          const pad = 16;
+          const x = W - pipW - pad;
+          const y = H - pipH - pad;
+
+          ctx.save();
+          ctx.globalAlpha = 0.9;
+          ctx.fillStyle = "#000";
+          roundRect(ctx, x - 2, y - 2, pipW + 4, pipH + 4, 12);
+          ctx.fill();
+          ctx.restore();
+
+          ctx.save();
+          roundRect(ctx, x, y, pipW, pipH, 10);
+          ctx.clip();
+          ctx.drawImage(pipVideo, x, y, pipW, pipH);
+          ctx.restore();
+        }
+      } catch {}
+      drawRafRef.current = requestAnimationFrame(draw);
+    };
+    if (drawRafRef.current) cancelAnimationFrame(drawRafRef.current);
+    drawRafRef.current = requestAnimationFrame(draw);
+
+    const canvasStream = canvas.captureStream(30);
+
+    // Audio mix (local + all remote)
+    const AC: typeof AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
+    const audioCtx = new AC();
+    audioCtxRef.current = audioCtx;
+    const dest = audioCtx.createMediaStreamDestination();
+
+    // local mic
+    const local = localStreamRef.current;
+    if (local) {
+      local.getAudioTracks().forEach((t) => {
+        const s = new MediaStream([t]);
+        const src = audioCtx.createMediaStreamSource(s);
+        src.connect(dest);
+      });
+    }
+
+    // remotes
+    Object.values(peers).forEach((p) => {
+      p.stream.getAudioTracks().forEach((t) => {
+        const s = new MediaStream([t]);
+        const src = audioCtx.createMediaStreamSource(s);
+        src.connect(dest);
+      });
+    });
+
+    dest.stream.getAudioTracks().forEach((a) => canvasStream.addTrack(a));
+    return canvasStream;
+  }
+
+  async function startRecording() {
+    if (recording) return;
+    const composed = buildComposedStream();
+    if (!composed) {
+      alert("Unable to start recorder.");
+      return;
+    }
+    recordedChunksRef.current = [];
+
+    let mime = "video/webm;codecs=vp9,opus";
+    if (!MediaRecorder.isTypeSupported(mime)) mime = "video/webm;codecs=vp8,opus";
+    if (!MediaRecorder.isTypeSupported(mime)) mime = "video/webm";
+
+    const mr = new MediaRecorder(composed, { mimeType: mime });
+    recorderRef.current = mr;
+    mr.ondataavailable = (ev) => {
+      if (ev.data && ev.data.size > 0) recordedChunksRef.current.push(ev.data);
+    };
+    mr.onstop = () => {
+      if (drawRafRef.current) cancelAnimationFrame(drawRafRef.current);
+      drawRafRef.current = null;
+      try { audioCtxRef.current?.close(); } catch {}
+
+      const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${code}-${new Date().toISOString().replace(/[:.]/g, "-")}.webm`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+    mr.start(1000);
+    setRecording(true);
+  }
+
+  function stopRecording() {
+    if (!recording) return;
+    try { recorderRef.current?.stop(); } catch {}
+    setRecording(false);
+  }
+
+  /* ==========================================================
      Controls
      ========================================================== */
   function sendChat(e: React.FormEvent<HTMLFormElement>) {
@@ -374,7 +518,6 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
     }
   }
   function leaveCall() {
-    // If timer started and we haven't posted, store as "left"
     if (startedAt && !endPostedRef.current) void postToWordPress("left");
     try {
       socketRef.current?.disconnect();
@@ -484,7 +627,7 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
               </div>
             ) : null}
 
-            <StageVideo id={resolvedStageId} label={resolvedStageLabel} peers={peers} />
+            <StageVideo id={resolvedStageId} label={resolvedStageLabel} peers={peers} videoRef={stageVideoRef} />
 
             {/* Self PiP */}
             <div style={sx.pip}>
@@ -550,7 +693,28 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
                 {messages.map((m, i) => (
                   <div key={i} style={{ marginBottom: 10 }}>
                     <b style={{ color: "#e2e8f0" }}>{m.name || m.from || "Anon"}</b>
-                    <div style={{ color: "#cbd5e1" }}>{m.text}</div>
+
+                    {m.text ? (
+                      <div style={{ color: "#cbd5e1", wordBreak: "break-word" }}>{m.text}</div>
+                    ) : null}
+
+                    {m.attachment ? (
+                      <div style={{ marginTop: 6 }}>
+                        {m.attachment.type.startsWith("image/") ? (
+                          <a href={m.attachment.url} target="_blank" rel="noreferrer" style={{ display: "inline-block" }}>
+                            <img
+                              src={m.attachment.url}
+                              alt={m.attachment.name}
+                              style={{ maxWidth: 220, maxHeight: 160, borderRadius: 8, border: "1px solid #243145" }}
+                            />
+                          </a>
+                        ) : (
+                          <a href={m.attachment.url} target="_blank" rel="noreferrer" style={{ color: "#93c5fd" }}>
+                            ⬇️ {m.attachment.name} ({Math.ceil(m.attachment.size / 1024)} KB)
+                          </a>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -573,6 +737,13 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
         <Ctrl icon={MicIcon} label={muted ? "Unmute" : "Mute"} onClick={toggleMute} active={muted} />
         <Ctrl icon={CamIcon} label={camOff ? "Camera On" : "Camera Off"} onClick={toggleCam} active={camOff} />
         <Ctrl icon={ScreenIcon} label="Share Screen" onClick={shareScreen} />
+        <Ctrl
+          icon={recording ? StopIcon : RecordIcon}
+          label={recording ? "Stop" : "Record"}
+          onClick={() => (recording ? stopRecording() : startRecording())}
+          active={recording}
+          danger={recording}
+        />
         <Ctrl icon={PeopleIcon} label="Participants" onClick={() => { setPanelTab("people"); setPanelOpen(true); }} />
         <Ctrl icon={ChatIcon} label="Chat" onClick={() => { setPanelTab("chat"); setPanelOpen(true); }} badge={unreadChat} />
         <Ctrl icon={EndIcon} label="Leave" onClick={() => endMeeting("left")} danger />
@@ -607,11 +778,7 @@ const sx: Record<string, React.CSSProperties> = {
     height: "100%",
     paddingBottom: CONTROLS_RESERVED,
   },
-  stageArea: {
-    display: "grid",
-    gridTemplateRows: "1fr 120px",
-    padding: 16,
-  },
+  stageArea: { display: "grid", gridTemplateRows: "1fr 120px", padding: 16 },
   stageCard: {
     position: "relative",
     background: "#000",
@@ -620,13 +787,7 @@ const sx: Record<string, React.CSSProperties> = {
     boxShadow: "0 10px 30px rgba(0,0,0,.35)",
     minHeight: 360,
   },
-  filmstrip: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    overflowX: "auto",
-    padding: "10px 4px",
-  },
+  filmstrip: { display: "flex", alignItems: "center", gap: 10, overflowX: "auto", padding: "10px 4px" },
   pip: {
     position: "absolute",
     right: 16,
@@ -671,11 +832,7 @@ const sx: Record<string, React.CSSProperties> = {
     fontSize: 18,
     cursor: "pointer",
   },
-  panelBody: {
-    overflow: "auto",
-    height: "calc(100% - 50px)",
-    padding: 10,
-  },
+  panelBody: { overflow: "auto", height: "calc(100% - 50px)", padding: 10 },
   personRow: {
     display: "flex",
     alignItems: "center",
@@ -715,14 +872,7 @@ const sx: Record<string, React.CSSProperties> = {
     borderRadius: 10,
     outline: "none",
   },
-  sendBtn: {
-    background: "#2563eb",
-    color: "#fff",
-    border: "none",
-    padding: "10px 14px",
-    borderRadius: 10,
-    fontWeight: 600,
-  },
+  sendBtn: { background: "#2563eb", color: "#fff", border: "none", padding: "10px 14px", borderRadius: 10, fontWeight: 600 },
   controlsBar: {
     position: "fixed",
     left: "50%",
@@ -763,7 +913,7 @@ function tabStyle(active: boolean): React.CSSProperties {
   };
 }
 
-/* ---------- Small UI bits ---------- */
+/* ---------- Buttons ---------- */
 function Ctrl({
   icon: Icon,
   label,
@@ -790,6 +940,8 @@ function Ctrl({
         borderRadius: 999,
         border: "1px solid rgba(255,255,255,0.08)",
         background: danger ? "#ef4444" : active ? "#1f2937" : "#0b1220",
+       
+        boxShadow: danger && active ? "0 0 0 6px rgba(239,68,68,0.15)" : "none",
         color: "#e5e7eb",
         display: "grid",
         placeItems: "center",
@@ -883,6 +1035,23 @@ function EndIcon() { return (<svg width="22" height="22" viewBox="0 0 24 24" fil
 function ChatIcon() { return (<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v10H7l-3 3V5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><path d="M8 9h8M8 12h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>); }
 function UsersIcon() { return (<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="3.5" stroke="currentColor" strokeWidth="1.6"/><path d="M15 12a3 3 0 1 0 0-6 3 3 0 0 1 0 6Z" fill="currentColor"/><path d="M3.5 19c.7-3.2 4.1-5 7.5-5s6.8 1.8 7.5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>); }
 function PeopleIcon() { return UsersIcon(); }
+function RecordIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="7" stroke="currentColor" strokeWidth="1.6"/>
+      <circle cx="12" cy="12" r="4" fill="currentColor"/>
+    </svg>
+  );
+}
+
+function StopIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor"/>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" fill="none" />
+    </svg>
+  );
+}
 
 /* ---------- Filmstrip & Stage ---------- */
 function RemoteTile({
@@ -938,18 +1107,23 @@ function StageVideo({
   id,
   label,
   peers,
+  videoRef,
 }: {
   id: string | null;
   label: string;
   peers: Record<string, PeerInfo>;
+  videoRef?: React.RefObject<HTMLVideoElement | null>;
 }) {
-  const ref = useRef<HTMLVideoElement | null>(null);
+  const innerRef = useRef<HTMLVideoElement>(null);
+  const ref = videoRef as React.RefObject<HTMLVideoElement> ?? innerRef;
+
   useEffect(() => {
     if (ref.current) {
       const stream = id ? peers[id]?.stream ?? null : null;
       (ref.current as HTMLVideoElement & { srcObject?: MediaStream | null }).srcObject = stream;
     }
-  }, [id, peers]);
+  }, [id, peers, ref]);
+
   return (
     <>
       <video ref={ref} autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover", background: "#000" }} />
