@@ -83,12 +83,33 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
 
     const peerConns = new Map<string, RTCPeerConnection>();
     const audioMonitors = new Map<string, () => void>();
+    const pendingIce = new Map<string, RTCIceCandidateInit[]>();
+
+    async function flushPendingIce(id: string) {
+      const pc = peerConns.get(id);
+      if (!pc || !pc.remoteDescription) return;
+      const queue = pendingIce.get(id) ?? [];
+      while (queue.length) {
+        const cand = queue.shift()!;
+        try {
+          // Some servers send “null”/end-of-candidates markers: ignore gracefully
+          if (cand && (cand.candidate ?? "") !== "") {
+            await pc.addIceCandidate(new RTCIceCandidate(cand));
+          }
+        } catch (e) {
+          console.warn("addIceCandidate failed for", id, e);
+        }
+      }
+    }
+    
 
     async function ensurePeer(id: string): Promise<RTCPeerConnection> {
       const existing = peerConns.get(id);
       if (existing) return existing;
 
+
       const pc = new RTCPeerConnection(ICE);
+      if (!pendingIce.has(id)) pendingIce.set(id, []);
       peerConns.set(id, pc);
 
       // Add local tracks
@@ -190,23 +211,39 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       socket.emit("answer", { to: from, sdp: answer });
+    
+      await flushPendingIce(from); // <— NEW
     });
+    
 
     socket.on("answer", async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
       const pc = peerConns.get(from);
-      if (pc) await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      if (!pc) return;
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      await flushPendingIce(from); // <— NEW
     });
-
-    socket.on("ice-candidate", async ({ from, candidate }: { from: string; candidate: RTCIceCandidateInit }) => {
+    
+    socket.on("ice-candidate", async ({ from, candidate }: { from: string; candidate: RTCIceCandidateInit | null }) => {
       const pc = peerConns.get(from);
-      if (pc && candidate) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (e) {
-          console.error(e);
-        }
+      if (!pc) return;
+    
+      // Handle “end of candidates” / nulls without throwing
+      if (!candidate || (candidate.candidate ?? "") === "") return;
+    
+      if (!pc.remoteDescription) {
+        // Remote description not set yet → queue it
+        (pendingIce.get(from) ?? []).push(candidate);
+        pendingIce.set(from, pendingIce.get(from)!); // ensure map updated
+        return;
+      }
+    
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (e) {
+        console.warn("addIceCandidate failed (live)", e);
       }
     });
+    
 
     socket.on("user-left", ({ id }: { id: string }) => {
       const pc = peerConns.get(id);
@@ -215,6 +252,7 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
         pc.close();
       }
       peerConns.delete(id);
+      pendingIce.delete(id);
       setPeers((prev) => {
         const copy: Record<string, PeerInfo> = { ...prev };
         delete copy[id];
@@ -482,41 +520,82 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
       const display = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
       const screenTrack = display.getVideoTracks()[0];
       if (!screenTrack) return;
-
+  
+      // Collect only active video senders
       const senders: RTCRtpSender[] = [];
-      Object.values(peers).forEach((p) => {
-        p.pc.getSenders().forEach((s) => {
+      Object.values(peers).forEach(({ pc }) => {
+        const pcClosed =
+          pc.connectionState === "closed" ||
+          pc.signalingState === "closed" ||
+          pc.iceConnectionState === "closed";
+        if (pcClosed) return; // skip dead PCs
+        pc.getSenders().forEach((s) => {
           if (s.track && s.track.kind === "video") senders.push(s);
         });
       });
-
+  
+      // Swap out outgoing tracks (ignore failures from stale senders)
+      await Promise.all(
+        senders.map((s) =>
+          s.replaceTrack(screenTrack).catch(() => {
+            /* ignore invalid state on stale sender */
+          })
+        )
+      );
+  
+      // Update local preview stream
       const localStream = localStreamRef.current;
-      const localVideoTrack = localStream?.getVideoTracks()[0];
-      if (!localStream || !localVideoTrack) return;
-
-      await Promise.all(senders.map((s) => s.replaceTrack(screenTrack)));
-
-      localStream.removeTrack(localVideoTrack);
-      localStream.addTrack(screenTrack);
-      if (localVideoRef.current) {
-        (localVideoRef.current as HTMLVideoElement & { srcObject?: MediaStream }).srcObject = localStream;
-      }
-
-      screenTrack.onended = async () => {
-        const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const camTrack = camStream.getVideoTracks()[0];
-        if (!camTrack) return;
-        await Promise.all(senders.map((s) => s.replaceTrack(camTrack)));
-        localStream.removeTrack(screenTrack);
-        localStream.addTrack(camTrack);
+      const oldLocalVideo = localStream?.getVideoTracks()[0] || null;
+      if (localStream) {
+        if (oldLocalVideo) localStream.removeTrack(oldLocalVideo);
+        localStream.addTrack(screenTrack);
         if (localVideoRef.current) {
           (localVideoRef.current as HTMLVideoElement & { srcObject?: MediaStream }).srcObject = localStream;
+        }
+      }
+  
+      // When user stops sharing, restore camera safely
+      screenTrack.onended = async () => {
+        try {
+          const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          const camTrack = camStream.getVideoTracks()[0];
+          if (!camTrack) return;
+  
+          // Replace on active senders only
+          const activeSenders: RTCRtpSender[] = [];
+          Object.values(peers).forEach(({ pc }) => {
+            const pcClosed =
+              pc.connectionState === "closed" ||
+              pc.signalingState === "closed" ||
+              pc.iceConnectionState === "closed";
+            if (pcClosed) return;
+            pc.getSenders().forEach((s) => {
+              if (s.track && s.track.kind === "video") activeSenders.push(s);
+            });
+          });
+  
+          await Promise.all(
+            activeSenders.map((s) => s.replaceTrack(camTrack).catch(() => {}))
+          );
+  
+          // Swap back in local preview
+          if (localStreamRef.current) {
+            const ls = localStreamRef.current;
+            ls.getVideoTracks().forEach((t) => ls.removeTrack(t));
+            ls.addTrack(camTrack);
+            if (localVideoRef.current) {
+              (localVideoRef.current as HTMLVideoElement & { srcObject?: MediaStream }).srcObject = ls;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to restore camera after screenshare:", e);
         }
       };
     } catch (e) {
       console.error(e);
     }
   }
+  
   function leaveCall() {
     if (startedAt && !endPostedRef.current) void postToWordPress("left");
     try {
