@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, Link } from 'lucide-react';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -132,7 +132,7 @@ export default function ContactPage() {
                     </ul>
                   </div>
                   <Button variant="outline" size="sm" className="w-full">
-                    Visit FAQ Page
+                    <Link href={'/faq'}>Visit FAQ Page</Link>
                   </Button>
                 </CardContent>
               </Card>

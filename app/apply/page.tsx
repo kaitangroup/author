@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,8 @@ import { Footer } from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { Check, Plus, X, DollarSign, Clock, Users, Star } from 'lucide-react';
+import { Check, Plus, X, DollarSign, Clock, Users, Star, Camera } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@radix-ui/react-avatar';
 
 interface ProfileData {
   firstName: string;
@@ -47,9 +48,14 @@ interface ProfileData {
 export default function TutorApplicationPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+   const apiUrl2 = (process.env.NEXT_PUBLIC_WP_URL || '').replace(/\/+$/, '');
   const [loading, setLoading] = useState(true);
   const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+    // 🔹 avatar upload helpers
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [profileData, setProfileData] = useState<ProfileData>({
     firstName: '',
@@ -111,7 +117,9 @@ export default function TutorApplicationPage() {
           languages: data.languages || [],
           teachingStyle: data.teaching_style || '',
           availability: data.availability || [],
-          avatar: data.avatar_urls?.['96'] || '',
+          avatar:
+            (data.avatar ) ||
+            '',
           agreeToBackground: data.agree_to_background || false,
           agreeToTerms: data.agree_to_terms || false,
           university: data.university || '',
@@ -240,6 +248,117 @@ export default function TutorApplicationPage() {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
+ // ================== AVATAR UPLOAD (Simple Local Avatars) ==================
+  const handleAvatarButton = () => fileInputRef.current?.click();
+
+  const onPickAvatar: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // small validations
+    const okTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!okTypes.includes(file.type)) {
+      toast.error('Please select a JPG/PNG/GIF/WEBP image');
+      e.currentTarget.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Max 5MB image allowed');
+      e.currentTarget.value = '';
+      return;
+    }
+
+    const token = localStorage.getItem('wpToken');
+    if (!token) {
+      toast.error('Not signed in');
+      return;
+    }
+    if (!apiUrl2) {
+      toast.error('WP URL not configured');
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+
+      // 1) upload to media
+      const fd = new FormData();
+      fd.append('file', file, file.name);
+
+      const mediaRes = await fetch(`${apiUrl2}/wp-json/wp/v2/media`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // DO NOT set Content-Type manually for FormData
+        } as any,
+        body: fd,
+      });
+
+      if (!mediaRes.ok) {
+        const t = await mediaRes.text().catch(() => '');
+        throw new Error(`Media upload failed: ${mediaRes.status} ${t || mediaRes.statusText}`);
+      }
+
+      const media = await mediaRes.json();
+      const attachmentId = media?.id;
+      const sourceUrl: string | undefined = media?.source_url;
+
+      if (!attachmentId) throw new Error('Upload ok but no attachment id returned');
+
+      // 2) set as local avatar via REST
+      const setRes = await fetch(`${apiUrl2}/wp-json/wp/v2/users/me`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          simple_local_avatar: { media_id: attachmentId },
+        }),
+      });
+
+      if (!setRes.ok) {
+        const t = await setRes.text().catch(() => '');
+        throw new Error(`Set avatar failed: ${setRes.status} ${t || setRes.statusText}`);
+      }
+
+      // 3) refetch current user to get fresh avatar_urls
+      const meRes = await fetch(`${apiUrl2}/wp-json/wp/v2/users/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!meRes.ok) {
+        // fallback: preview with uploaded image URL
+        if (sourceUrl) {
+          setProfileData((prev) => (prev ? { ...prev, avatar: sourceUrl } : prev));
+        }
+        toast.success('Avatar updated');
+        return;
+      }
+
+      const me = await meRes.json();
+      const newAvatar: string =
+        me?.avatar_urls?.['96'] || me?.avatar_urls?.['48'] || me?.avatar_urls?.['24'] || sourceUrl || '';
+
+      setProfileData((prev) => (prev ? { ...prev, avatar: newAvatar } : prev));
+      toast.success('Avatar updated');
+    } catch (err: any) {
+      console.error(err);
+      const msg =
+        /not allowed to create media/i.test(err?.message || '') ?
+          'Your account does not have permission to upload media' :
+          err?.message || 'Avatar upload failed';
+      toast.error(msg);
+    } finally {
+      setUploadingAvatar(false);
+      // clear input so same file can be picked again if needed
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // ==========================================================================
+
+
+
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!validateStep(4)) return;
@@ -270,6 +389,49 @@ export default function TutorApplicationPage() {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold mb-4">Personal Information</h2>
+            {/* Profile Photo */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Photo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-6">
+                 <Avatar className="h-24 w-24 rounded-full overflow-hidden ring-2 ring-white">
+                    <AvatarImage
+                      src={profileData?.avatar || ''}
+                      alt="Profile"
+                      className="h-full w-full object-cover"
+                    />
+                    <AvatarFallback className="h-full w-full flex items-center justify-center rounded-full bg-gray-200 text-lg">
+                      {(profileData?.firstName?.[0] || '') + (profileData?.lastName?.[0] || '')}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={onPickAvatar}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAvatarButton}
+                      disabled={uploadingAvatar}
+                    >
+                      <Camera className="h-4 w-4 mr-2" />
+                      {uploadingAvatar ? 'Uploading...' : 'Change Photo'}
+                    </Button>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Upload a professional photo. JPG, PNG, GIF or WEBP. Max size 5MB.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label>First Name *</Label>

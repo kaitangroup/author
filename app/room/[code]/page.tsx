@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
+import { useSession } from "next-auth/react";  
 
 /* ---------- Types ---------- */
 type PeerInfo = { pc: RTCPeerConnection; stream: MediaStream; name?: string };
@@ -18,10 +19,19 @@ type RoomPageProps = {
 const ICE: RTCConfiguration = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
 
 export default function RoomPage({ params, searchParams }: RoomPageProps) {
+  const { data: session, status } = useSession();  
+  const isMobile = useIsMobile();
+
   const code = decodeURIComponent(params.code!);
   const rawName = searchParams?.name;
   const name = (Array.isArray(rawName) ? rawName[0] : rawName) ?? "Guest";
+  const nameFromQuery = (Array.isArray(rawName) ? rawName[0] : rawName) ?? "";
   const router = useRouter();
+  const [selfStream, setSelfStream] = useState<MediaStream | null>(null);
+
+  const HIDE_REMOTE_TILES = true;
+  // Resolved display name
+  const [displayName, setDisplayName] = useState<string>("");
 
   // Env
   const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "";
@@ -49,7 +59,13 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   const [muted, setMuted] = useState(false);
   const [camOff, setCamOff] = useState(false);
   const [panelTab, setPanelTab] = useState<"people" | "chat">("people");
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;            // SSR: default open
+    return !window.matchMedia("(max-width:768px)").matches;    // mobile → closed, desktop → open
+  });
+ 
+
+  
   const [unreadChat, setUnreadChat] = useState(0);
   const [selfId, setSelfId] = useState<string | null>(null);
   const [stageId, setStageId] = useState<string | null>(null);
@@ -66,12 +82,59 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   // Recording UI state
   const [recording, setRecording] = useState(false);
 
+  function useIsMobile(breakpoint = 768) {
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+      const mql = window.matchMedia(`(max-width:${breakpoint}px)`);
+      const onChange = () => setIsMobile(mql.matches);
+      onChange();
+      mql.addEventListener?.("change", onChange);
+      return () => mql.removeEventListener?.("change", onChange);
+    }, [breakpoint]);
+    return isMobile;
+  }
+
+  useEffect(() => {
+  setPanelOpen(!isMobile);   // auto-close on mobile, auto-open on desktop
+}, [isMobile]);
+
+  // Derive once session/LS are available
+useEffect(() => {
+  // 1) from session
+  const fromSession = session?.user?.name?.trim();
+
+  // 2) from localStorage
+  let fromLocal: string | null = null;
+  if (typeof window !== "undefined") {
+    // if NextAuth added/updated token, persist it too (optional)
+    if ((session as any)?.wpToken) localStorage.setItem("wpToken", (session as any).wpToken);
+    if (session?.user?.name) localStorage.setItem("wpUser", session.user.name);
+
+    fromLocal = localStorage.getItem("wpUser");
+  }
+
+  // 3) from query
+  const fromQuery = nameFromQuery?.trim() || null;
+
+  // 4) ultimate fallback (short random suffix to avoid pure "Guest")
+  const fallback = `Guest-${Math.random().toString(36).slice(2, 6)}`;
+
+  const finalName = fromSession || fromLocal || fromQuery || fallback;
+  setDisplayName(finalName);
+
+  // if we didn’t have a stored name, persist the resolved one
+  if (typeof window !== "undefined" && !fromLocal) {
+    localStorage.setItem("wpUser", finalName);
+  }
+}, [session, status, nameFromQuery]);
+
   /* ==========================================================
      Socket + WebRTC
      ========================================================== */
   useEffect(() => {
+    if (!displayName) return; 
     const socket = io(SOCKET_URL || (typeof window !== "undefined" ? window.location.origin : ""), {
-      auth: { name },
+      auth: { name: displayName }, 
       path: "/socket.io",
       timeout: 10000,
       // default transports (polling -> upgrade) are most robust behind proxies
@@ -177,10 +240,11 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
       localStreamRef.current = stream;
+      setSelfStream(stream);
       if (localVideoRef.current) {
         (localVideoRef.current as HTMLVideoElement & { srcObject?: MediaStream }).srcObject = stream;
       }
-      socket.emit("join", { room: code, name });
+      socket.emit("join", { room: code, displayName });
     }
 
     // Presence + Chat
@@ -281,7 +345,7 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, name, pinnedId, SOCKET_URL, panelOpen, panelTab]);
+  }, [code, displayName, pinnedId, SOCKET_URL, panelOpen, panelTab]);
 
   /* ==========================================================
      Timer: start when ≥2 participants, warn at T-5m, end at 0
@@ -622,14 +686,21 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   return (
     <div style={sx.page}>
       {/* Top bar */}
-      <header style={sx.topbar}>
+      <header
+        style={{
+          ...sx.topbar,
+          padding: isMobile ? "0 10px" : "0 16px",
+          gap: isMobile ? 6 : 12,
+          height: 56,
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={chip()}>{code.toUpperCase()}</div>
           <span style={{ fontSize: 12, color: "#9aa4b2" }}>{participants.length} participants</span>
         </div>
-
+  
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {/* Timer / duration selector */}
+          {/* Timer / duration */}
           {startedAt ? (
             <div
               title="Time remaining"
@@ -651,14 +722,20 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
               <select
                 value={durationMin}
                 onChange={(e) => setDurationMin(Number(e.target.value) as 30 | 60)}
-                style={{ background: "#0f172a", color: "#e5e7eb", border: "1px solid #1f2b40", padding: "6px 10px", borderRadius: 10 }}
+                style={{
+                  background: "#0f172a",
+                  color: "#e5e7eb",
+                  border: "1px solid #1f2b40",
+                  padding: "6px 10px",
+                  borderRadius: 10,
+                }}
               >
                 <option value={30}>30 min</option>
                 <option value={60}>60 min</option>
               </select>
             </div>
           )}
-
+  
           <TopBtn
             icon={UsersIcon}
             label="Participants"
@@ -680,11 +757,26 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
           />
         </div>
       </header>
-
+  
       {/* Main */}
-      <div style={sx.main}>
-        <div style={sx.stageArea}>
-          <div style={sx.stageCard}>
+      <div
+        style={{
+          ...sx.main,
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 360px",
+          paddingBottom: isMobile ? 88 : CONTROLS_RESERVED,
+        }}
+      >
+        {/* LEFT: Stage + Filmstrip */}
+        <div
+          style={{
+            ...sx.stageArea,
+            // force a visible second row for the strip
+            gridTemplateRows: isMobile ? "1fr 96px" : "1fr 130px",
+            padding: isMobile ? 8 : 16,
+            paddingBottom: isMobile ? 88 : CONTROLS_RESERVED,
+          }}
+        >
+          <div style={{ ...sx.stageCard, minHeight: isMobile ? 240 : 360 }}>
             {/* 5-min banner */}
             {startedAt && timeLeftSec <= 300 && timeLeftSec > 0 ? (
               <div
@@ -705,45 +797,104 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
                 ⏰ Meeting ends in {Math.ceil(timeLeftSec / 60)} min
               </div>
             ) : null}
-
-            <StageVideo id={resolvedStageId} label={resolvedStageLabel} peers={peers} videoRef={stageVideoRef} />
-
-            {/* Self PiP */}
-            <div style={sx.pip}>
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 10, background: "#000" }}
-              />
-              <div style={sx.pipBadge}>
-                {(selfId && nameMap[selfId]) ? `${nameMap[selfId]} (You)` : `${name} (You)`}
+  
+            <StageVideo
+              id={resolvedStageId}
+              label={resolvedStageLabel}
+              peers={peers}
+              videoRef={stageVideoRef}
+            />
+  
+            {/* Self PiP → MOBILE ONLY */}
+            {isMobile && (
+              <div
+                style={{
+                  ...sx.pip,
+                  width: 120,
+                  height: 72,
+                  bottom: 80,
+                  right: 8,
+                  outline: "2px solid rgba(255,255,255,0.18)",
+                }}
+              >
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    borderRadius: 10,
+                    background: "#000",
+                  }}
+                />
+                <div style={{ ...sx.pipBadge, fontSize: 10 }}>
+                  {(selfId && nameMap[selfId]) ? `${nameMap[selfId]} (You)` : `${displayName} (You)`}
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Filmstrip */}
-          <div style={sx.filmstrip}>
-            {Object.keys(peers).length === 0 && (
-              <div style={{ color: "#93a2b2", fontSize: 13 }}>Waiting for others to join…</div>
             )}
-            {Object.entries(peers).map(([id]) => (
-              <RemoteTile
-                key={id}
-                id={id}
-                peers={peers}
-                active={resolvedStageId === id}
-                label={nameMap[id] ?? id.slice(0, 6)}
-                onPin={() => setPinnedId((p) => (p === id ? null : id))}
-                onFocus={() => setStageId(id)}
-              />
-            ))}
+          </div>
+  
+          {/* Filmstrip */}
+          <div
+            style={{
+              ...sx.filmstrip,
+              padding: isMobile ? "6px 2px" : "10px 6px",
+              gap: isMobile ? 8 : 10,
+              height: "100%",       // ⬅️ fill the reserved row
+              minHeight: 0,         // ⬅️ avoid grid overflow clipping
+              position: "fixed",
+              zIndex: 45,           // ⬅️ stay above content behind
+             
+            }}
+          >
+            {/* Self tile → DESKTOP ONLY */}
+            {!isMobile && (
+  <SelfTile
+  stream={selfStream ?? localStreamRef.current ?? null}
+    label={(selfId && nameMap[selfId]) ? `${nameMap[selfId]} (You)` : `${displayName} (You)`}
+    active={resolvedStageId === selfId}
+    onPin={() => setPinnedId((p) => (p === (selfId ?? "") ? null : (selfId ?? null)))}
+    onFocus={() => selfId && setStageId(selfId)}
+  />
+)}
+  
+         {/* Remote tiles (hidden) */}
+{!HIDE_REMOTE_TILES &&
+  Object.entries(peers).map(([id]) => (
+    <RemoteTile
+      key={id}
+      id={id}
+      peers={peers}
+      active={resolvedStageId === id}
+      label={nameMap[id] ?? id.slice(0, 6)}
+      onPin={() => setPinnedId((p) => (p === id ? null : id))}
+      onFocus={() => setStageId(id)}
+    />
+  ))
+}
           </div>
         </div>
-
-        {/* Right panel */}
-        <aside style={{ ...sx.panel, transform: panelOpen ? "translateX(0)" : "translateX(100%)" }}>
+  
+        {/* RIGHT: slide-in panel */}
+        <aside
+          style={{
+            ...sx.panel,
+            position: isMobile ? "fixed" : "relative",
+            right: 0,
+            top: isMobile ? 56 : 0,
+            width: isMobile ? "100%" : 360,
+            height: isMobile ? "calc(100dvh - 56px)" : "auto",
+            zIndex: 60,
+            transform: panelOpen ? "translateX(0)" : "translateX(100%)",
+            paddingBottom: isMobile ? 88 : CONTROLS_RESERVED,
+            borderLeft: isMobile ? "none" : sx.panel.borderLeft,
+            borderTop: isMobile ? "1px solid rgba(255,255,255,0.06)" : "none",
+            background: "#0b1220",
+          }}
+        >
           <div style={sx.panelTabs}>
             <button onClick={() => setPanelTab("people")} style={tabStyle(panelTab === "people")}>
               Participants ({participants.length})
@@ -751,9 +902,11 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
             <button onClick={() => setPanelTab("chat")} style={tabStyle(panelTab === "chat")}>
               Chat
             </button>
-            <button onClick={() => setPanelOpen(false)} style={sx.panelClose}>✕</button>
+            <button onClick={() => setPanelOpen(false)} style={sx.panelClose}>
+              ✕
+            </button>
           </div>
-
+  
           {panelTab === "people" ? (
             <div style={sx.panelBody}>
               {participants.map((p) => (
@@ -772,11 +925,9 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
                 {messages.map((m, i) => (
                   <div key={i} style={{ marginBottom: 10 }}>
                     <b style={{ color: "#e2e8f0" }}>{m.name || m.from || "Anon"}</b>
-
                     {m.text ? (
                       <div style={{ color: "#cbd5e1", wordBreak: "break-word" }}>{m.text}</div>
                     ) : null}
-
                     {m.attachment ? (
                       <div style={{ marginTop: 6 }}>
                         {m.attachment.type.startsWith("image/") ? (
@@ -804,15 +955,32 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
                   placeholder="Type a message"
                   style={sx.chatInput}
                 />
-                <button type="submit" style={sx.sendBtn}>Send</button>
+                <button type="submit" style={sx.sendBtn}>
+                  Send
+                </button>
               </form>
             </div>
           )}
         </aside>
       </div>
-
+  
       {/* Controls */}
-      <footer style={sx.controlsBar}>
+      <footer
+        style={{
+          ...sx.controlsBar,
+          left: 0,
+          transform: "none",
+          width: "100%",
+          borderRadius: 16,
+          padding: 8,
+          display: "flex",
+          gap: 10,
+          justifyContent: "center",
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
+        }}
+      >
         <Ctrl icon={MicIcon} label={muted ? "Unmute" : "Mute"} onClick={toggleMute} active={muted} />
         <Ctrl icon={CamIcon} label={camOff ? "Camera On" : "Camera Off"} onClick={toggleCam} active={camOff} />
         <Ctrl icon={ScreenIcon} label="Share Screen" onClick={shareScreen} />
@@ -829,6 +997,7 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
       </footer>
     </div>
   );
+  
 }
 
 /* ---------- Styles ---------- */
@@ -1149,6 +1318,7 @@ function RemoteTile({
   onFocus: () => void;
 }) {
   const ref = useRef<HTMLVideoElement | null>(null);
+  const isNarrow = typeof window !== "undefined" ? window.matchMedia("(max-width:768px)").matches : false;
   useEffect(() => {
     if (ref.current) {
       (ref.current as HTMLVideoElement & { srcObject?: MediaStream | null }).srcObject =
@@ -1157,17 +1327,18 @@ function RemoteTile({
   }, [id, peers]);
   return (
     <div
-      onClick={onFocus}
-      style={{
-        position: "relative",
-        width: 180,
-        height: 110,
-        borderRadius: 12,
-        overflow: "hidden",
-        background: "#000",
-        outline: active ? "2px solid #2563eb" : "1px solid rgba(255,255,255,0.12)",
-        cursor: "pointer",
-      }}
+    onClick={onFocus}
+    style={{
+      position: "relative",
+      flex: "0 0 auto",  
+      width: isNarrow ? 140 : 180,
+      height: isNarrow ? 86 : 110,
+      borderRadius: 12,
+      overflow: "hidden",
+      background: "#000",
+      outline: active ? "2px solid #2563eb" : "1px solid rgba(255,255,255,0.12)",
+      cursor: "pointer",
+    }}
     >
       <video ref={ref} autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       <button
@@ -1181,6 +1352,83 @@ function RemoteTile({
     </div>
   );
 }
+
+
+function SelfTile({
+  stream,
+  label,
+  active,
+  onPin,
+  onFocus,
+}: {
+  stream: MediaStream | null;
+  label: string;
+  active?: boolean;
+  onPin: () => void;
+  onFocus: () => void;
+}) {
+  const ref = useRef<HTMLVideoElement | null>(null);
+  const isNarrow = typeof window !== "undefined"
+    ? window.matchMedia("(max-width:768px)").matches
+    : false;
+
+  useEffect(() => {
+    if (ref.current) {
+      (ref.current as HTMLVideoElement & { srcObject?: MediaStream | null }).srcObject = stream;
+    }
+  }, [stream]);
+
+  return (
+    <div
+      onClick={onFocus}
+      style={{
+        position: "relative",
+        flex: "0 0 auto",  
+        width: isNarrow ? 140 : 180,
+        height: isNarrow ? 86 : 110,
+        borderRadius: 12,
+        overflow: "hidden",
+        background: "#000",
+        outline: active ? "2px solid #2563eb" : "1px solid rgba(255,255,255,0.12)",
+        cursor: "pointer",
+      }}
+    >
+      <video ref={ref} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      <button
+        onClick={(e) => { e.stopPropagation(); onPin(); }}
+        title="Pin to stage"
+        style={{
+          position: "absolute",
+          right: 8,
+          top: 8,
+          background: "rgba(0,0,0,0.55)",
+          border: "1px solid rgba(255,255,255,0.18)",
+          color: "#e5e7eb",
+          padding: "4px 8px",
+          borderRadius: 999,
+          fontSize: 11,
+        }}
+      >
+        {active ? "Unpin" : "Pin"}
+      </button>
+      <div
+        style={{
+          position: "absolute",
+          left: 8,
+          bottom: 8,
+          background: "rgba(0,0,0,0.55)",
+          color: "#fff",
+          padding: "2px 8px",
+          borderRadius: 8,
+          fontSize: 11,
+        }}
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
+
 
 function StageVideo({
   id,

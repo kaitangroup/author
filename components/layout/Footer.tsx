@@ -19,22 +19,22 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold mb-4">For Students</h3>
+            <h3 className="font-semibold mb-4">Learn with us</h3>
             <ul className="space-y-2 text-sm">
               <li><Link href="/search" className="text-gray-300 hover:text-white">Find Author</Link></li>
               <li><Link href="/auth/user/register" className="text-gray-300 hover:text-white">Sign Up</Link></li>
-              <li><Link href="/how-it-works" className="text-gray-300 hover:text-white">How it Works</Link></li>
-              <li><Link href="/subjects" className="text-gray-300 hover:text-white">Subjects</Link></li>
+              <li><Link href="/blogs" className="text-gray-300 hover:text-white">Blog</Link></li>
+              <li><Link href="/latest-blog-posts" className="text-gray-300 hover:text-white">Latest Blog Posts</Link></li>
             </ul>
           </div>
 
           {/* Tutor Links */}
           <div>
-            <h3 className="font-semibold mb-4">For Authors</h3>
+            <h3 className="font-semibold mb-4">Work with us</h3>
             <ul className="space-y-2 text-sm">
+              <li><Link href="/careers-at-author" className="text-gray-300 hover:text-white">Careers at Author</Link></li>
               <li><Link href="/auth/author/register" className="text-gray-300 hover:text-white">Become a Author</Link></li>
-              <li><Link href="/tutor-resources" className="text-gray-300 hover:text-white">Resources</Link></li>
-              <li><Link href="/tutor-success" className="text-gray-300 hover:text-white">Success Stories</Link></li>
+              <li><Link href="/emailtutor" className="text-gray-300 hover:text-white">Request a Author</Link></li>
               <li><Link href="/tutor-support" className="text-gray-300 hover:text-white">Support</Link></li>
             </ul>
           </div>

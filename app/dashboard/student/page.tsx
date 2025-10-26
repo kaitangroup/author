@@ -108,26 +108,35 @@ export default function StudentDashboard() {
                 <CardContent>
                   {upcomingBookings.length > 0 ? (
                     <div className="space-y-4">
-                      {upcomingBookings.map((booking) => (
-                        <div key={booking.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                          <Avatar>
-                            <AvatarImage src={booking.tutorAvatar} />
-                            <AvatarFallback>{booking.tutorName[0]}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <h4 className="font-medium">{booking.subject} with {booking.tutorName}</h4>
-                            <p className="text-sm text-gray-600">{booking.date} at {booking.time}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Clock className="h-3 w-3 text-gray-400" />
-                              <span className="text-xs text-gray-500">{booking.duration} minutes</span>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <Badge variant="secondary">{booking.status}</Badge>
-                            <p className="text-sm font-medium mt-1">${booking.amount}</p>
-                          </div>
+                     {upcomingBookings.map((booking) => (
+                    <div key={booking.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                      <Avatar>
+                        <AvatarImage src={booking.tutorAvatar} />
+                        <AvatarFallback>{booking.tutorName[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <h4 className="font-medium">{booking.subject} with {booking.tutorName}</h4>
+                        <p className="text-sm text-gray-600">{booking.date} at {booking.time}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Clock className="h-3 w-3 text-gray-400" />
+                          <span className="text-xs text-gray-500">{booking.duration} minutes</span>
                         </div>
-                      ))}
+
+                        {/* ✅ Join Now link */}
+                        <Link
+                          href="/room/demo"
+                          className="text-blue-600 text-sm font-medium mt-2 inline-block hover:underline"
+                        >
+                          Join Now →
+                        </Link>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant="secondary">{booking.status}</Badge>
+                        <p className="text-sm font-medium mt-1">${booking.amount}</p>
+                      </div>
+                    </div>
+                  ))}
+
                     </div>
                   ) : (
                     <div className="text-center py-8">
