@@ -63,6 +63,9 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
     if (typeof window === "undefined") return true;            // SSR: default open
     return !window.matchMedia("(max-width:768px)").matches;    // mobile → closed, desktop → open
   });
+
+
+
  
 
   
@@ -78,6 +81,9 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   const [timeLeftSec, setTimeLeftSec] = useState<number>(0);
   const [warned5m, setWarned5m] = useState(false);
   const endPostedRef = useRef(false);
+
+  const pinnedIdRef = useRef<string | null>(null);
+  useEffect(() => { pinnedIdRef.current = pinnedId; }, [pinnedId]);
 
   // Recording UI state
   const [recording, setRecording] = useState(false);
@@ -216,7 +222,9 @@ useEffect(() => {
         const tick = () => {
           analyser.getByteFrequencyData(data);
           const avg = data.reduce((a, b) => a + b, 0) / data.length;
-          if (!pinnedId && avg > 16) setStageId((prev) => (prev !== id ? id : prev));
+          if (!pinnedIdRef.current && avg > 16) {
+            setStageId((prev) => (prev !== id ? id : prev));
+          }
           raf = requestAnimationFrame(tick);
         };
         tick();
@@ -345,7 +353,7 @@ useEffect(() => {
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, displayName, pinnedId, SOCKET_URL, panelOpen, panelTab]);
+  }, [code, displayName, SOCKET_URL]);
 
   /* ==========================================================
      Timer: start when ≥2 participants, warn at T-5m, end at 0
@@ -893,6 +901,7 @@ useEffect(() => {
             borderLeft: isMobile ? "none" : sx.panel.borderLeft,
             borderTop: isMobile ? "1px solid rgba(255,255,255,0.06)" : "none",
             background: "#0b1220",
+            willChange: "transform",
           }}
         >
           <div style={sx.panelTabs}>

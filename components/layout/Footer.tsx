@@ -35,7 +35,7 @@ export function Footer() {
               <li><Link href="/careers-at-author" className="text-gray-300 hover:text-white">Careers at Author</Link></li>
               <li><Link href="/auth/author/register" className="text-gray-300 hover:text-white">Become a Author</Link></li>
               <li><Link href="/emailtutor" className="text-gray-300 hover:text-white">Request a Author</Link></li>
-              <li><Link href="/tutor-support" className="text-gray-300 hover:text-white">Support</Link></li>
+              <li><Link href="/support" className="text-gray-300 hover:text-white">Support</Link></li>
             </ul>
           </div>
 
