@@ -20,10 +20,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
   
       <NextAuthSessionProvider>
-        <LoadingProvider minMs={500}>
+       
           {children}
           <Toaster />
-        </LoadingProvider>
+       
         
       </NextAuthSessionProvider>
 

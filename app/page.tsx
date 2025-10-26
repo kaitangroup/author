@@ -10,6 +10,7 @@ import { Footer } from '@/components/layout/Footer';
 import { Search, BookOpen, MessageCircle, Star, Users, Clock } from 'lucide-react';
 import Link from 'next/link';
 
+
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
