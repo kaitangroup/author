@@ -7,10 +7,10 @@ import InitialOverlay from '@/components/InitialOverlay';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "TutorConnect - Find Your Perfect Tutor",
+  title: "AuthorConnect - Find Your Perfect Author",
   description:
-    "Connect with qualified tutors for personalized learning. Browse subjects, book lessons, and achieve your academic goals.",
-  keywords: "tutor, tutoring, education, learning, online tutoring, academic support",
+    "Connect with qualified authors for personalized learning. Browse subjects, book lessons, and achieve your academic goals.",
+  keywords: "author, authoring, education, learning, online authoring, academic support",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

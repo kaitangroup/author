@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { BookingModal } from '@/components/booking/BookingModal';
 import { Star, MapPin, Clock, MessageCircle, Calendar, GraduationCap, Globe, Award } from 'lucide-react';
 import { mockTutors } from '@/lib/mockData';
+import { useSession } from "next-auth/react";
 
 type WPUser = {
   id: number;
@@ -44,6 +45,7 @@ type WPUser = {
 export default function TutorProfilePage() {
   const params = useParams();
   const router = useRouter();                     // ← init router
+  const { data: session, status } = useSession();
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [author, setAuthor] = useState<WPUser>();
   const [loading, setLoading] = useState<boolean>(true);
@@ -256,12 +258,24 @@ export default function TutorProfilePage() {
 
                   <div className="space-y-3">
                     <Button 
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                      onClick={() => setShowBookingModal(true)}
-                    >
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Book a Lesson
-                    </Button>
+  className="w-full bg-blue-600 hover:bg-blue-700"
+  onClick={() => {
+    if (status === "loading") return;
+    const wpToken = typeof window !== "undefined" 
+      ? localStorage.getItem("wpToken") 
+      : null;
+    const isLoggedIn = !!(wpToken || session);
+
+    if (!isLoggedIn) {
+      router.push("/auth/user/login");
+    } else {
+      setShowBookingModal(true);
+    }
+  }}
+>
+  <Calendar className="mr-2 h-4 w-4" />
+  Book a Lesson
+</Button>
                     
                     <Button
                       variant="outline"

@@ -31,7 +31,7 @@ export default function TutorDashboard() {
         <div className="max-w-7xl mx-auto">
           {/* Dashboard Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Tutor Dashboard</h1>
+            <h1 className="text-3xl font-bold mb-2">Author Dashboard</h1>
             <p className="text-gray-600">Manage your lessons, students, and earnings all in one place.</p>
           </div>
 
@@ -73,7 +73,7 @@ export default function TutorDashboard() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">{upcomingBookings.length}</p>
-                    <p className="text-sm text-gray-600">Upcoming Lessons</p>
+                    <p className="text-sm text-gray-600">Upcoming Meetings</p>
                   </div>
                 </div>
               </CardContent>
@@ -151,6 +151,57 @@ export default function TutorDashboard() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* My Books Section */}
+<Card>
+  <CardHeader>
+    <div className="flex items-center justify-between">
+      <CardTitle>My Books</CardTitle>
+      <Link href="/books" className="text-blue-600 text-sm font-medium hover:underline">
+        Manage All Books →
+      </Link>
+    </div>
+  </CardHeader>
+  <CardContent>
+    <table className="min-w-full text-sm text-left border">
+      <thead className="bg-gray-100 text-gray-700">
+        <tr>
+          <th className="py-2 px-4 border">Title</th>
+          <th className="py-2 px-4 border">Genre</th>
+          <th className="py-2 px-4 border">Published</th>
+          <th className="py-2 px-4 border">Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr className="border-t">
+          <td className="py-2 px-4">The Creative Mind</td>
+          <td className="py-2 px-4">Self-help</td>
+          <td className="py-2 px-4">2023</td>
+          <td className="py-2 px-4">$19.99</td>
+        </tr>
+        <tr className="border-t">
+          <td className="py-2 px-4">Code with Clarity</td>
+          <td className="py-2 px-4">Technology</td>
+          <td className="py-2 px-4">2022</td>
+          <td className="py-2 px-4">$25.00</td>
+        </tr>
+        <tr className="border-t">
+          <td className="py-2 px-4">Author’s Journey</td>
+          <td className="py-2 px-4">Biography</td>
+          <td className="py-2 px-4">2024</td>
+          <td className="py-2 px-4">$15.50</td>
+        </tr>
+        <tr className="border-t">
+          <td className="py-2 px-4">Stories Untold</td>
+          <td className="py-2 px-4">Fiction</td>
+          <td className="py-2 px-4">2021</td>
+          <td className="py-2 px-4">$12.99</td>
+        </tr>
+      </tbody>
+    </table>
+  </CardContent>
+</Card>
+
 
               {/* Pending Requests */}
               {pendingBookings.length > 0 && (

@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useState, useMemo } from 'react';
 import {
   Dialog,
@@ -17,6 +18,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
 type WPTutor = {
   id: number;
   name: string;
@@ -65,7 +71,9 @@ interface DayData {
   timeSlots: TimeSlot[];
 }
 
-export function BookingModal({ isOpen, onClose, tutor }: BookingModalProps) {
+function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
+  const stripe = useStripe();
+  const elements = useElements();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
@@ -75,6 +83,10 @@ export function BookingModal({ isOpen, onClose, tutor }: BookingModalProps) {
     duration: 60,
     message: '',
   });
+
+  // stripe 
+
+
 
     // Generate mock time slots
     const generateTimeSlots = (date: Date, isWeekend: boolean = false): TimeSlot[] => {
@@ -182,30 +194,153 @@ export function BookingModal({ isOpen, onClose, tutor }: BookingModalProps) {
                      'July', 'August', 'September', 'October', 'November', 'December'];
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+// --- add these helpers above handleSubmit ---
+function parseTwelveHour(time: string) {
+  // e.g. "7:00 am"
+  const m = time.trim().toLowerCase().match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ap = m[3];
+  if (ap === 'pm' && h !== 12) h += 12;
+  if (ap === 'am' && h === 12) h = 0;
+  return { h, min };
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
+function toIsoWithOffset(d: Date) {
+  // Format local time with the browser’s TZ offset, e.g. 2025-11-12T14:00:00+06:00
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const offMin = -d.getTimezoneOffset(); // minutes east of UTC
+  const sign = offMin >= 0 ? '+' : '-';
+  const abs = Math.abs(offMin);
+  const oh = pad(Math.floor(abs / 60));
+  const om = pad(abs % 60);
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}` +
+    `${sign}${oh}:${om}`
+  );
+}
+  
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!selectedDate || !formData.subject || !formData.time) {
-      toast.error('Please fill in all required fields');
+
+    if (!selectedTimeSlot) {
+      toast.error('Pick a time first');
       return;
     }
-    const total = (tutor?.hourly_rate ? (tutor.hourly_rate * formData.duration) / 60 : 0);
 
-    // const total = (tutor.hourly_rate * formData.duration) / 60;
-    
-    // Simulate booking
-    toast.success(`Booking request sent! Total: $${total.toFixed(2)}`);
-    onClose();
-    
-    // Reset form
-   // setSelectedDate(undefined);
-    setFormData({
-      subject: '',
-      time: '',
-      duration: 60,
-      message: '',
+    if (!stripe || !elements) {
+      toast.error('Stripe not loaded');
+      return;
+    }
+
+    if (!formData.subject || !selectedTimeSlot) {
+      toast.error('Please fill all fields');
+      return;
+    }
+
+      // Build the start datetime from selected day + time
+  const parsed = parseTwelveHour(selectedTimeSlot);
+  if (!parsed) {
+    toast.error('Invalid time slot format');
+    return;
+  }
+  const start = new Date(selectedDate);
+  start.setHours(parsed.h, parsed.min, 0, 0);
+  const startIso = toIsoWithOffset(start);
+
+  // Get WP user id (Header stores this in localStorage at login)
+  const raw = localStorage.getItem('wpUserdata');
+  const wpdata = raw ? JSON.parse(raw) : null;
+  const userId = wpdata?.id;
+  if (!userId) {
+    toast.error('Not logged in (no WordPress user id found).');
+    return;
+  }
+
+  const endpoint = process.env.NEXT_PUBLIC_BOOKLY_ENDPOINT!;
+  const token = process.env.NEXT_PUBLIC_BOOKLY_TOKEN!;
+  const serviceId = Number(process.env.NEXT_PUBLIC_BOOKLY_SERVICE_ID || 0);
+  const staffId = Number(process.env.NEXT_PUBLIC_BOOKLY_STAFF_ID || 0);
+
+  if (!endpoint || !token || !serviceId || !staffId) {
+    toast.error('Missing Bookly env config.');
+    return;
+  }
+
+  // Amount based on your summary
+  const total = tutor?.hourly_rate ? (tutor.hourly_rate * formData.duration) / 60 : 0;
+
+
+    const amountInCents = Math.round(total * 100);
+    const res = await fetch('/api/create-payment-intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: amountInCents }),
     });
+
+    const { clientSecret } = await res.json();
+
+    const result = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: { card: elements.getElement(CardElement)! },
+    });
+
+    if (result.error) {
+      toast.error(result.error.message || 'Payment failed');
+    } else if (result.paymentIntent?.status === 'succeeded') {
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            service_id: serviceId,
+            staff_id: staffId,
+            start: startIso,
+            user_id: Number(userId),
+            persons: 1,
+            // customer is optional when sending user_id; include if you want:
+            customer: { full_name: wpdata?.first_name, email: wpdata?.email, phone: wpdata?.phone },
+            payment: {
+              total:total,
+              paid: total,
+              currency: 'usd',
+              status: 'completed',
+              type: 'stripe',
+              external: { gateway: 'sslcommerz', transaction_id: 'TXN12345', meta: { order_id: 'ABC-1' } }
+            }
+          }),
+        });
+    
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err?.message || `HTTP ${res.status}`);
+        }
+    
+        const data = await res.json();
+        console.log('Bookly response:', data);
+        toast.success('Booking created!');
+        onClose();
+      } catch (err: any) {
+        console.error(err);
+        toast.error(`Booking failed: ${err.message || err}`);
+      }
+
+
+      toast.success('Payment successful! Booking confirmed.');
+
+
+
+
+
+
+      onClose();
+    }
   };
 
   const handleInputChange = (field: string, value: string | number) => {
@@ -477,7 +612,7 @@ export function BookingModal({ isOpen, onClose, tutor }: BookingModalProps) {
                 </div>
                 <div className="flex justify-between">
                   <span>Time:</span>
-                  <span>{formData.time || 'Not selected'}</span>
+                  <span>{selectedTimeSlot || 'Not selected'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Duration:</span>
@@ -496,6 +631,11 @@ export function BookingModal({ isOpen, onClose, tutor }: BookingModalProps) {
             </CardContent>
           </Card>
 
+          <div className="space-y-4">
+            <Label>Payment Details</Label>
+            <CardElement className="border p-3 rounded-md" />
+          </div>
+
           <div className="flex gap-3">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancel
@@ -507,5 +647,13 @@ export function BookingModal({ isOpen, onClose, tutor }: BookingModalProps) {
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+export function BookingModal(props: BookingModalProps) {
+  return (
+    <Elements stripe={stripePromise}>
+      <BookingModalInner {...props} />
+    </Elements>
   );
 }

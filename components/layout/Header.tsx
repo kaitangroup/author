@@ -141,6 +141,13 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link href="/books">
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      Manage Books
+                    </Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem asChild>
                     <Link href="/messages">
                       <MessageCircle className="h-4 w-4 mr-2" />
                       Messages
