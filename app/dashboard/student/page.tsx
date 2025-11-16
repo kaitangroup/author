@@ -155,7 +155,7 @@ export default function StudentDashboard() {
 
       {/* ✅ Join Now link */}
       <Link
-        href="/room/demo"
+          href={booking.video_link ?? "/room/demo"}
         className="text-blue-600 text-sm font-medium mt-2 inline-block hover:underline"
       >
         Join Link →
