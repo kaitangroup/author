@@ -638,7 +638,7 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
                               </p>
                             </div>
                             <div className="space-y-2">
-                              {generateTimeSlots(selectedDisplayDate).slice(0, 8).map((slot, index) => {
+                              {generateTimeSlots2(selectedDisplayDate).slice(0, 8).map((slot, index) => {
                                 const keyForSlot = `${selectedDisplayDate.getTime()}|${slot.time}`;
                                 return (
                                   <button
