@@ -62,6 +62,7 @@ export interface WPUser  {
 };
 
 export interface AuthorDashboard {
+  monthlyEarnings: any;
   totalEarnings: any;
   id: number;
   name: string;

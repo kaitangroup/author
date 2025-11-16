@@ -24,7 +24,7 @@ export default function TutorDashboard() {
   const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
   const [authorDashboard, setAuthorDashboard] = useState<AuthorDashboard | null>();
   const totalEarnings = authorDashboard ? authorDashboard.totalEarnings  : 0; // Mock data
-  const monthlyEarnings = 1250; // Mock data
+  const monthlyEarnings = authorDashboard ? authorDashboard.monthlyEarnings : 0; // Mock data
   const totalStudents = authorDashboard ? authorDashboard.totalStudents : 0; // Mock data
   const averageRating = 4.8; // Mock data
 
