@@ -170,7 +170,7 @@ export default function TutorDashboard() {
         href="/room/demo"
         className="text-blue-600 text-sm font-medium mt-2 inline-block hover:underline"
       >
-        Join Now →
+        Join Link →
       </Link>
     </div>
     <div className="text-right">
@@ -309,7 +309,7 @@ export default function TutorDashboard() {
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Link href="/schedule">
+                  <Link href="/books">
                     <Button variant="outline" className="w-full justify-start">
                       <Calendar className="h-4 w-4 mr-3" />
                       Manage Books

@@ -1,5 +1,5 @@
 'use client';
-
+import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,11 +12,42 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { mockBookings, mockMessages } from '@/lib/mockData';
+import { AuthorDashboard } from '@/lib/types';
 
 export default function StudentDashboard() {
-  const upcomingBookings = mockBookings.filter(booking => booking.status === 'confirmed');
+ 
   const pendingBookings = mockBookings.filter(booking => booking.status === 'pending');
   const unreadMessages = mockMessages.filter(msg => msg.unread);
+  const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
+  const [loading, setLoading] = useState(true);
+  const [authorDashboard, setAuthorDashboard] = useState<AuthorDashboard | null>();
+  const upcomingBookings = authorDashboard && Array.isArray(authorDashboard.bookings)
+  ? authorDashboard.bookings.filter((booking: any) => booking?.status === 'pending')
+  : [];
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('wpToken');
+        const res = await fetch(`${apiUrl}wp-json/custom/v1/dashboard`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!res.ok) throw new Error('Failed to fetch profile');
+        const data = await res.json();
+        setAuthorDashboard(data);
+       
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -108,34 +139,34 @@ export default function StudentDashboard() {
                 <CardContent>
                   {upcomingBookings.length > 0 ? (
                     <div className="space-y-4">
-                     {upcomingBookings.map((booking) => (
-                    <div key={booking.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                      <Avatar>
-                        <AvatarImage src={booking.tutorAvatar} />
-                        <AvatarFallback>{booking.tutorName[0]}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <h4 className="font-medium">{booking.subject} with {booking.tutorName}</h4>
-                        <p className="text-sm text-gray-600">{booking.date} at {booking.time}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Clock className="h-3 w-3 text-gray-400" />
-                          <span className="text-xs text-gray-500">{booking.duration} minutes</span>
-                        </div>
+                    {upcomingBookings.map((booking) => (
+  <div key={booking?.appointment_id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+    <Avatar>
+      <AvatarImage src={booking.avatar} />
+      <AvatarFallback>{booking.name}</AvatarFallback>
+    </Avatar>
+    <div className="flex-1">
+      <h4 className="font-medium">{booking.subject} with {booking.name}</h4>
+      <p className="text-sm text-gray-600">{booking.date} at {booking.time}</p>
+      <div className="flex items-center gap-2 mt-1">
+        <Clock className="h-3 w-3 text-gray-400" />
+        <span className="text-xs text-gray-500">{booking.duration} minutes</span>
+      </div>
 
-                        {/* ✅ Join Now link */}
-                        <Link
-                          href="/room/demo"
-                          className="text-blue-600 text-sm font-medium mt-2 inline-block hover:underline"
-                        >
-                          Join Now →
-                        </Link>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="secondary">{booking.status}</Badge>
-                        <p className="text-sm font-medium mt-1">${booking.amount}</p>
-                      </div>
-                    </div>
-                  ))}
+      {/* ✅ Join Now link */}
+      <Link
+        href="/room/demo"
+        className="text-blue-600 text-sm font-medium mt-2 inline-block hover:underline"
+      >
+        Join Link →
+      </Link>
+    </div>
+    <div className="text-right">
+      <Badge variant="secondary">{booking.status}</Badge>
+      <p className="text-sm font-medium mt-1">${booking.price}</p>
+    </div>
+  </div>
+))}
 
                     </div>
                   ) : (
