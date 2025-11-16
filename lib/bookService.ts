@@ -1,6 +1,10 @@
 import { Book, BookFormData } from './types';
 
-const WP_API_BASE = 'http://authorproback.me/wp-json/wp/v2';
+const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
+
+const WP_API_BASE = `${apiUrl}wp-json/wp/v2`;
+
+console.log('WP_API_BASE:', WP_API_BASE);
 
 const getAuthHeaders = (): Record<string, string> => {
   if (typeof window === 'undefined') return {};

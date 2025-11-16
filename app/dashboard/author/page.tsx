@@ -17,8 +17,7 @@ import { AuthorDashboard } from '@/lib/types';
 
 
 export default function TutorDashboard() {
-  const upcomingBookings = mockBookings.filter(booking => booking.status === 'confirmed');
-  const pendingBookings = mockBookings.filter(booking => booking.status === 'pending');
+ 
   const unreadMessages = mockMessages.filter(msg => msg.unread);
   const [loading, setLoading] = useState(true);
   const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
@@ -27,6 +26,15 @@ export default function TutorDashboard() {
   const monthlyEarnings = authorDashboard ? authorDashboard.monthlyEarnings : 0; // Mock data
   const totalStudents = authorDashboard ? authorDashboard.totalStudents : 0; // Mock data
   const averageRating = 4.8; // Mock data
+
+  const upcomingBookings = authorDashboard && Array.isArray(authorDashboard.bookings)
+    ? authorDashboard.bookings.filter((booking: any) => booking?.status === 'pending')
+    : [];
+
+    const pendingBookings = authorDashboard && Array.isArray(authorDashboard.bookings)
+    ? authorDashboard.bookings.filter((booking: any) => booking?.status === 'pending')
+    : [];
+
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -131,7 +139,7 @@ export default function TutorDashboard() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle>Upcoming Lessons</CardTitle>
+                    <CardTitle>Upcoming Meetings</CardTitle>
                     <Link href="/calendar">
                       {/* <Button size="sm">
                         <Calendar className="h-4 w-4 mr-2" />
@@ -144,13 +152,13 @@ export default function TutorDashboard() {
                   {upcomingBookings.length > 0 ? (
                     <div className="space-y-4">
                       {upcomingBookings.map((booking) => (
-  <div key={booking.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+  <div key={booking?.appointment_id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
     <Avatar>
-      <AvatarImage src={booking.tutorAvatar} />
-      <AvatarFallback>{booking.tutorName[0]}</AvatarFallback>
+      <AvatarImage src={booking.avatar} />
+      <AvatarFallback>{booking.name}</AvatarFallback>
     </Avatar>
     <div className="flex-1">
-      <h4 className="font-medium">{booking.subject} with {booking.tutorName}</h4>
+      <h4 className="font-medium">{booking.subject} with {booking.name}</h4>
       <p className="text-sm text-gray-600">{booking.date} at {booking.time}</p>
       <div className="flex items-center gap-2 mt-1">
         <Clock className="h-3 w-3 text-gray-400" />
@@ -167,7 +175,7 @@ export default function TutorDashboard() {
     </div>
     <div className="text-right">
       <Badge variant="secondary">{booking.status}</Badge>
-      <p className="text-sm font-medium mt-1">${booking.amount}</p>
+      <p className="text-sm font-medium mt-1">${booking.price}</p>
     </div>
   </div>
 ))}
@@ -247,7 +255,7 @@ export default function TutorDashboard() {
                 </Card>
               )}
 
-              {/* Pending Requests */}
+              {/* Pending Requests
               {pendingBookings.length > 0 && (
                 <Card>
                   <CardHeader>
@@ -274,7 +282,7 @@ export default function TutorDashboard() {
                     </div>
                   </CardContent>
                 </Card>
-              )}
+              )} */}
 
               {/* Earnings Chart */}
               <Card>

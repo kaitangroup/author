@@ -70,6 +70,14 @@ export interface AuthorDashboard {
   avatar: string;
   messages: string[];
   books: string[];
+  bookings: {
+    appointment_id: number;
+    book_title: string;
+    student_name: string;
+    date: string;
+    amount: number;
+    status: string;
+  }
   totalStudents: number;
   averageRating: GLfloat;
   
