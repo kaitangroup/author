@@ -10,6 +10,7 @@ import { Search, Filter } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { TutorCard } from '@/components/tutors/TutorCard';
 import { useDebounce } from 'react-use';
+import { toast } from 'sonner';
 
 type Filters = {
   subjects: string[];
@@ -17,9 +18,9 @@ type Filters = {
   ageRange: [number, number];
   rating: number;
   credentials: {
-    backgroundCheck: false,
-    ixlCertified: false,
-    licensedTeacher: false,
+    backgroundCheck: false;
+    ixlCertified: false;
+    licensedTeacher: false;
   };
   availability: string;
   instantBook: boolean;
@@ -90,11 +91,10 @@ export default function SearchPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
- 
-const [userEmail, setUserEmail] = useState('');
-const [savingSearch, setSavingSearch] = useState(false);
-
-const [searchTypes, setSearchTypes] = useState<string[]>([]); 
+  const [userEmail, setUserEmail] = useState('');
+  const [savingSearch, setSavingSearch] = useState(false);
+  const [searchTypes, setSearchTypes] = useState<string[]>([]);
+  const [emailError, setEmailError] = useState('');
 
   useEffect(() => {
     const q = searchParams.get('q') ?? '';
@@ -106,10 +106,12 @@ const [searchTypes, setSearchTypes] = useState<string[]>([]);
     textarea.innerHTML = str;
     return textarea.value;
   };
-  useDebounce(()=>setDebounceSearchTerm(searchTerm), 500, [searchTerm]);
+
+  useDebounce(() => setDebounceSearchTerm(searchTerm), 500, [searchTerm]);
 
   useEffect(() => {
     const abortCtrl = new AbortController();
+
     async function fetchUsers() {
       setLoading(true);
       try {
@@ -123,7 +125,6 @@ const [searchTypes, setSearchTypes] = useState<string[]>([]);
         }
         params.append('min_rate', String(filters.priceRange[0]));
         params.append('max_rate', String(filters.priceRange[1]));
-
         params.append('min_age', String(filters.ageRange[0]));
         params.append('max_age', String(filters.ageRange[1]));
         if (filters.rating > 0) params.append('rating', String(filters.rating));
@@ -183,6 +184,7 @@ const [searchTypes, setSearchTypes] = useState<string[]>([]);
         setLoading(false);
       }
     }
+
     fetchUsers();
     return () => abortCtrl.abort();
   }, [debounceSearchTerm, filters, page]);
@@ -252,103 +254,147 @@ const [searchTypes, setSearchTypes] = useState<string[]>([]);
                 ))}
               </div>
 
+              {/* No results + Save search */}
               {!loading && tutors.length === 0 && (
-  <div className="text-center py-12 space-y-4">
-    <p className="text-xl text-gray-500">
-      No results found for “{searchTerm}”
-    </p>
-    <p className="text-gray-400">Try adjusting your search or filters</p>
+                <div className="text-center py-12 space-y-4">
+                  <p className="text-xl text-gray-500">
+                    No results found for “{searchTerm}”
+                  </p>
+                  <p className="text-gray-400">
+                    Try adjusting your search or filters
+                  </p>
 
-    {searchTerm && (
-      <div className="mt-6 max-w-sm mx-auto bg-gray-50 border rounded-lg p-5 shadow-sm">
-        <p className="text-gray-700 mb-3 font-semibold">
-          Save this search for later
-        </p>
+                  {searchTerm && (
+                    <div className="mt-6 max-w-sm mx-auto bg-gray-50 border rounded-lg p-5 shadow-sm">
+                      <p className="text-gray-700 mb-3 font-semibold">
+                        Save this search for later
+                      </p>
 
-        {/* Auto-filled name field */}
-        <input
-          type="text"
-          placeholder="Search name"
-          value={searchTerm} // ✅ auto-filled
-          readOnly
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 bg-gray-100 text-gray-700"
-        />
+                      {/* Auto-filled name field */}
+                      <input
+                        type="text"
+                        placeholder="Search name"
+                        value={searchTerm}
+                        readOnly
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3 bg-gray-100 text-gray-700"
+                      />
 
-        {/* Email field */}
-        <input
-          type="email"
-          placeholder="Your email address"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500"
-          onChange={(e) => setUserEmail(e.target.value)}
-          value={userEmail}
-        />
+                      {/* Email field with inline error */}
+                      <div className="text-left mb-3">
+                        <input
+                          type="email"
+                          placeholder="Your email address"
+                          onChange={(e) => {
+                            setUserEmail(e.target.value);
+                            setEmailError('');
+                          }}
+                          value={userEmail}
+                          className={`w-full px-3 py-2 rounded-lg border ${
+                            emailError
+                              ? 'border-red-500 focus:ring-red-500 text-red-600'
+                              : 'border-gray-300 focus:ring-blue-500'
+                          }`}
+                        />
 
-        {/* Search type checkboxes */}
-        <div className="text-left mb-4">
-          <p className="text-gray-700 mb-2 font-medium">Search Type</p>
-          <div className="flex flex-col gap-2">
-            {(['author', 'book', 'subject'] as const).map((type) => (
-              <label key={type} className="flex items-center gap-2 text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={searchTypes.includes(type)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSearchTypes([...searchTypes, type]);
-                    } else {
-                      setSearchTypes(searchTypes.filter((t) => t !== type));
-                    }
-                  }}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="capitalize">{type}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Save button */}
-        <Button
-          onClick={async () => {
-            if (!userEmail)
-              return alert('Please enter your email address');
-            if (searchTypes.length === 0)
-              return alert('Please select at least one search type');
-
-            setSavingSearch(true);
-            try {
-              const base = (process.env.NEXT_PUBLIC_WP_URL ?? '').replace(/\/+$/, '');
-              const res = await fetch(`${base}/wp-json/authorpro/v1/save-search`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  name: searchTerm,
-                  term: searchTerm,
-                  types: searchTypes, // ✅ now an array
-                  email: userEmail,
-                }),
-              });
-              if (!res.ok) throw new Error('Failed to save search');
-              alert('Search saved successfully!');
-              setUserEmail('');
-              setSearchTypes([]);
-            } catch (e) {
-              alert('Error saving search');
-            } finally {
-              setSavingSearch(false);
-            }
-          }}
-          disabled={savingSearch}
-          className="w-full"
-        >
-          {savingSearch ? 'Saving...' : 'Save Search'}
-        </Button>
-      </div>
-    )}
-  </div>
-)}
+                        {/* Error text (left aligned) */}
+                        {emailError && (
+                          <p className="text-red-500 text-sm mt-1 text-left">
+                            {emailError}
+                          </p>
+                        )}
+                      </div>
 
 
+                      {/* Search type checkboxes */}
+                      <div className="text-left mb-4 mt-3">
+                        <p className="text-gray-700 mb-2 font-medium">
+                          Search Type (optional)
+                        </p>
+                        <div className="flex flex-col gap-2">
+                          {(['author', 'book', 'subject'] as const).map(
+                            (type) => (
+                              <label
+                                key={type}
+                                className="flex items-center gap-2 text-gray-700"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={searchTypes.includes(type)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSearchTypes([...searchTypes, type]);
+                                    } else {
+                                      setSearchTypes(
+                                        searchTypes.filter((t) => t !== type)
+                                      );
+                                    }
+                                  }}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="capitalize">{type}</span>
+                              </label>
+                            )
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Save button */}
+                      <Button
+                        onClick={async () => {
+                          if (!userEmail) {
+                            setEmailError('Email is required');
+                            return;
+                          }
+
+                          setEmailError('');
+                          setSavingSearch(true);
+
+                          try {
+                            const base = (
+                              process.env.NEXT_PUBLIC_WP_URL ?? ''
+                            ).replace(/\/+$/, '');
+                            const res = await fetch(
+                              `${base}/wp-json/authorpro/v1/save-search`,
+                              {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                  name: searchTerm,
+                                  term: searchTerm,
+                                  types: searchTypes,
+                                  email: userEmail,
+                                }),
+                              }
+                            );
+
+                            if (!res.ok)
+                              throw new Error('Failed to save search');
+
+                            toast.success(
+                              'Search saved ✅ We’ll notify you when we find matching authors.'
+                            );
+
+                            setUserEmail('');
+                            setSearchTypes([]);
+                          } catch (e) {
+                            toast.error(
+                              'Could not save your search. Please try again.'
+                            );
+                          } finally {
+                            setSavingSearch(false);
+                          }
+                        }}
+                        disabled={savingSearch}
+                        className="w-full"
+                      >
+                        {savingSearch ? 'Saving...' : 'Save Search'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Pagination */}
               <div className="flex justify-center items-center gap-4 mt-8">

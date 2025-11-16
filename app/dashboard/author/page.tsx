@@ -1,5 +1,5 @@
 'use client';
-
+import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,16 +12,46 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { mockBookings, mockMessages } from '@/lib/mockData';
+import { AuthorDashboard } from '@/lib/types';
+
+
 
 export default function TutorDashboard() {
   const upcomingBookings = mockBookings.filter(booking => booking.status === 'confirmed');
   const pendingBookings = mockBookings.filter(booking => booking.status === 'pending');
   const unreadMessages = mockMessages.filter(msg => msg.unread);
-
-  const totalEarnings = mockBookings.reduce((sum, booking) => sum + booking.amount, 0);
+  const [loading, setLoading] = useState(true);
+  const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
+  const [authorDashboard, setAuthorDashboard] = useState<AuthorDashboard | null>();
+  const totalEarnings = authorDashboard ? authorDashboard.totalEarnings  : 0; // Mock data
   const monthlyEarnings = 1250; // Mock data
-  const totalStudents = 24; // Mock data
+  const totalStudents = authorDashboard ? authorDashboard.totalStudents : 0; // Mock data
   const averageRating = 4.8; // Mock data
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('wpToken');
+        const res = await fetch(`${apiUrl}wp-json/custom/v1/dashboard`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!res.ok) throw new Error('Failed to fetch profile');
+        const data = await res.json();
+        setAuthorDashboard(data);
+       
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -152,56 +182,70 @@ export default function TutorDashboard() {
                 </CardContent>
               </Card>
 
-              {/* My Books Section */}
-<Card>
-  <CardHeader>
-    <div className="flex items-center justify-between">
-      <CardTitle>My Books</CardTitle>
-      <Link href="/books" className="text-blue-600 text-sm font-medium hover:underline">
-        Manage All Books →
-      </Link>
-    </div>
-  </CardHeader>
-  <CardContent>
-    <table className="min-w-full text-sm text-left border">
-      <thead className="bg-gray-100 text-gray-700">
-        <tr>
-          <th className="py-2 px-4 border">Title</th>
-          <th className="py-2 px-4 border">Genre</th>
-          <th className="py-2 px-4 border">Published</th>
-          <th className="py-2 px-4 border">Price</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr className="border-t">
-          <td className="py-2 px-4">The Creative Mind</td>
-          <td className="py-2 px-4">Self-help</td>
-          <td className="py-2 px-4">2023</td>
-          <td className="py-2 px-4">$19.99</td>
-        </tr>
-        <tr className="border-t">
-          <td className="py-2 px-4">Code with Clarity</td>
-          <td className="py-2 px-4">Technology</td>
-          <td className="py-2 px-4">2022</td>
-          <td className="py-2 px-4">$25.00</td>
-        </tr>
-        <tr className="border-t">
-          <td className="py-2 px-4">Author’s Journey</td>
-          <td className="py-2 px-4">Biography</td>
-          <td className="py-2 px-4">2024</td>
-          <td className="py-2 px-4">$15.50</td>
-        </tr>
-        <tr className="border-t">
-          <td className="py-2 px-4">Stories Untold</td>
-          <td className="py-2 px-4">Fiction</td>
-          <td className="py-2 px-4">2021</td>
-          <td className="py-2 px-4">$12.99</td>
-        </tr>
-      </tbody>
-    </table>
-  </CardContent>
-</Card>
+            {/* My Books */}
+            {Array.isArray((authorDashboard as any)?.books) && (authorDashboard as any).books.length > 0 && (
+                <Card>
+                  <CardHeader>
+  <div className="flex items-center justify-between w-full">
+    <CardTitle>My Books</CardTitle>
 
+    <Link
+      href="/books"
+      className="text-blue-600 text-sm font-medium hover:underline"
+    >
+      Manage All Books →
+    </Link>
+  </div>
+</CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm text-left">
+                        <thead>
+                          <tr className="text-gray-500 border-b">
+                            <th className="py-3 px-4 font-medium">Book</th>
+                            <th className="py-3 px-4 font-medium">Link</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(authorDashboard as any).books.slice(0, 4).map((book: any) => (
+                            <tr
+                              key={book.id}
+                              className="border-b last:border-b-0 hover:bg-muted/60 transition-colors"
+                            >
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-3">
+                                  {book.featured_image && (
+                                    <img
+                                      src={book.featured_image}
+                                      alt={book.title}
+                                      className="h-12 w-12 rounded-md object-cover border"
+                                    />
+                                  )}
+                                  <span className="font-medium">{book.title}</span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                {book.book_url ? (
+                                  <a
+                                    href={book.book_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline font-medium"
+                                  >
+                                    View Book →
+                                  </a>
+                                ) : (
+                                  <span className="text-gray-400">No link available</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Pending Requests */}
               {pendingBookings.length > 0 && (
@@ -260,7 +304,7 @@ export default function TutorDashboard() {
                   <Link href="/schedule">
                     <Button variant="outline" className="w-full justify-start">
                       <Calendar className="h-4 w-4 mr-3" />
-                      Manage Schedule
+                      Manage Books
                     </Button>
                   </Link>
                   <Link href="/messages">

@@ -10,37 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { BookingModal } from '@/components/booking/BookingModal';
-import { Star, MapPin, Clock, MessageCircle, Calendar, GraduationCap, Globe, Award } from 'lucide-react';
+import { Star, MapPin, Clock, MessageCircle, Calendar, GraduationCap, Globe, Award, Link } from 'lucide-react';
 import { mockTutors } from '@/lib/mockData';
 import { useSession } from "next-auth/react";
+import { WPUser } from '@/lib/types';
 
-type WPUser = {
-  id: number;
-  name: string;
-  bio: string;
-  slug: string;
-  location: string;
-  roles: string[];
-  description?: string;
-  avatar?: string;
-  website?: string;
-  degree?: string;
-  hourly_rate?: number;
-  subjects: string[];
-  education?: string;
-  experience?: string;
-  availability?: string[];
-  teaching_experience?: string;
-  teaching_style?: string;
-  date_of_birth?: string;
-  university?: string;
-  graduation_year?: string;
-  languages?: string;
-  tutoring_experience?: string;
-  why_tutor?: string;
-  references?: string;
-  location_city_state?: string;
-};
+
 
 export default function TutorProfilePage() {
   const params = useParams();
@@ -182,6 +157,65 @@ export default function TutorProfilePage() {
                 </CardContent>
               </Card>
 
+              {/* My Books */}
+              {Array.isArray((author as any)?.books) && (author as any).books.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>My Books</CardTitle>
+                    <Link href="/books" className="text-blue-600 text-sm font-medium hover:underline">
+        Manage All Books →
+      </Link>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm text-left">
+                        <thead>
+                          <tr className="text-gray-500 border-b">
+                            <th className="py-3 px-4 font-medium">Book</th>
+                            <th className="py-3 px-4 font-medium">Link</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(author as any).books.slice(0, 4).map((book: any) => (
+                            <tr
+                              key={book.id}
+                              className="border-b last:border-b-0 hover:bg-muted/60 transition-colors"
+                            >
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-3">
+                                  {book.featured_image && (
+                                    <img
+                                      src={book.featured_image}
+                                      alt={book.title}
+                                      className="h-12 w-12 rounded-md object-cover border"
+                                    />
+                                  )}
+                                  <span className="font-medium">{book.title}</span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                {book.book_url ? (
+                                  <a
+                                    href={book.book_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline font-medium"
+                                  >
+                                    View Book →
+                                  </a>
+                                ) : (
+                                  <span className="text-gray-400">No link available</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Experience & Education */}
               <Card>
                 <CardHeader>
@@ -257,17 +291,18 @@ export default function TutorProfilePage() {
                   </div>
 
                   <div className="space-y-3">
-                    <Button 
+                   <Button 
   className="w-full bg-blue-600 hover:bg-blue-700"
   onClick={() => {
     if (status === "loading") return;
+
     const wpToken = typeof window !== "undefined" 
       ? localStorage.getItem("wpToken") 
       : null;
     const isLoggedIn = !!(wpToken || session);
 
     if (!isLoggedIn) {
-      router.push("/auth/user/login");
+      router.push(`/auth/user/login?redirect=/tutors/${author?.id}`);
     } else {
       setShowBookingModal(true);
     }
@@ -276,6 +311,7 @@ export default function TutorProfilePage() {
   <Calendar className="mr-2 h-4 w-4" />
   Book a Lesson
 </Button>
+
                     
                     <Button
                       variant="outline"

@@ -35,6 +35,8 @@ type WPTutor = {
   website?: string;
   degree?: string;
   hourly_rate?: number;
+  staff_id?: number;
+  service_id?: number;
   subjects: string[];
   education?: string;
   experience?: string;
@@ -262,8 +264,8 @@ function toIsoWithOffset(d: Date) {
 
   const endpoint = process.env.NEXT_PUBLIC_BOOKLY_ENDPOINT!;
   const token = process.env.NEXT_PUBLIC_BOOKLY_TOKEN!;
-  const serviceId = Number(process.env.NEXT_PUBLIC_BOOKLY_SERVICE_ID || 0);
-  const staffId = Number(process.env.NEXT_PUBLIC_BOOKLY_STAFF_ID || 0);
+  const serviceId = Number(tutor?.service_id || 0);
+  const staffId = Number(tutor?.staff_id || 0);
 
   if (!endpoint || !token || !serviceId || !staffId) {
     toast.error('Missing Bookly env config.');
@@ -301,6 +303,7 @@ function toIsoWithOffset(d: Date) {
           body: JSON.stringify({
             service_id: serviceId,
             staff_id: staffId,
+            tutor_id: tutor?.id,
             start: startIso,
             user_id: Number(userId),
             persons: 1,

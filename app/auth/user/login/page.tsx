@@ -10,13 +10,16 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation"; // ⬅️ added useSearchParams
 
 // social icons
 import { FaGoogle, FaFacebook, FaApple } from "react-icons/fa";
 
 export default function StudentLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect"); // ⬅️ jekhane theke esecho
   const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
 
   const [formData, setFormData] = useState({ username: "", password: "" });
@@ -39,35 +42,7 @@ export default function StudentLoginPage() {
 
 
   
-     // ✅ Get session data after signIn
-      // const session = await getSession();
-      // console.log("🔹 NextAuth Session:", session);
   
-      // if (session?.user?.email) {
-      //   // ✅ Send user info to WP API
-      //   const wpRes = await fetch("http://authorproback.me/wp-json/custom/v1/social-login", {
-      //     method: "POST",
-      //     headers: { "Content-Type": "application/json" },
-      //     body: JSON.stringify({
-      //       email: session.user.email,
-      //       name: session.user.name,
-      //       provider,
-      //     }),
-      //   });
-  
-      //   const wpData = await wpRes.json();
-      //   console.log("🔹 WP API Response:", wpData);
-  
-      //   // ✅ If WP API success, store token & redirect
-      //   if (wpRes.ok && wpData?.token) {
-      //     localStorage.setItem("wpToken", wpData.token);
-      //     localStorage.setItem("wpUser", wpData.name);
-      //     toast.success("Login successful!");
-      //     router.push("/dashboard/student"); // ✅ Redirect after token is saved
-      //   } else {
-      //     toast.error("WP Social login failed!");
-      //   }
-      // }
     } catch (err) {
       console.error(`❌ Login with ${provider} failed:`, err);
       toast.error(`Login with ${provider} failed`);
@@ -130,6 +105,10 @@ export default function StudentLoginPage() {
           
         }else{
           router.push("/dashboard/student");
+        }
+
+        if(redirect){
+          router.push(redirect);
         }
         
       }

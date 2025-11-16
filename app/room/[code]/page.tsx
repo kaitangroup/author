@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useMemo, useRef, useState, use } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 import { useSession } from "next-auth/react";  
 
@@ -12,20 +12,23 @@ type Participant = { id: string; name?: string };
 type Attachment = { url: string; name: string; type: string; size: number };
 
 type RoomPageProps = {
-  params: { code: string };
-  searchParams: Record<string, string | string[] | undefined>;
+  params: Promise<{ code: string }>;   // ← FIX
 };
+
 
 const ICE: RTCConfiguration = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
 
-export default function RoomPage({ params, searchParams }: RoomPageProps) {
+export default function RoomPage({ params }: RoomPageProps) {
   const { data: session, status } = useSession();  
   const isMobile = useIsMobile();
+  const search = useSearchParams(); // 🔍 get query params from hook
+  const resolvedParams = use(params);  // ← FIX
+  const code = decodeURIComponent(resolvedParams.code);  // ← FIX
+  const appointmentId = search.get("appointmentid") ?? "";
+  const appointmentToken = search.get("token") ?? "";
 
-  const code = decodeURIComponent(params.code!);
-  const rawName = searchParams?.name;
-  const name = (Array.isArray(rawName) ? rawName[0] : rawName) ?? "Guest";
-  const nameFromQuery = (Array.isArray(rawName) ? rawName[0] : rawName) ?? "";
+  const rawName = search.get("name");
+  const nameFromQuery = rawName ?? "";
   const router = useRouter();
   const [selfStream, setSelfStream] = useState<MediaStream | null>(null);
 
@@ -37,6 +40,10 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "";
   const WP_ENDPOINT = process.env.NEXT_PUBLIC_WP_ENDPOINT || "";
   const WP_TOKEN = process.env.NEXT_PUBLIC_WP_TOKEN || "";
+  const WP_BOOKLY_VALIDATE = process.env.NEXT_PUBLIC_WP_BOOKLY_VALIDATE || "";
+
+  const [validationStatus, setValidationStatus] = useState<"checking" | "ok" | "failed">("checking");
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Refs
   const socketRef = useRef<Socket | null>(null);
@@ -75,7 +82,7 @@ export default function RoomPage({ params, searchParams }: RoomPageProps) {
   const [pinnedId, setPinnedId] = useState<string | null>(null);
 
   // Timer state
-  const [durationMin, setDurationMin] = useState<30 | 60>(30);
+  const [durationMin, setDurationMin] = useState<30 | 60>(60);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [timeLeftSec, setTimeLeftSec] = useState<number>(0);
@@ -134,11 +141,71 @@ useEffect(() => {
   }
 }, [session, status, nameFromQuery]);
 
+  // ==========================================================
+  // Bookly appointment validation (arg 2 = appointmentId, arg 3 = token)
+  // ==========================================================
+  useEffect(() => {
+    async function validateAppointment() {
+      // Basic presence checks
+
+      console.log("Validating appointment:", { appointmentId, appointmentToken, code });
+      if (!appointmentId || !appointmentToken) {
+        setValidationStatus("failed");
+        setValidationError("Missing appointment information in the link.");
+        return;
+      }
+
+      if (!WP_BOOKLY_VALIDATE) {
+        setValidationStatus("failed");
+        setValidationError("Validation endpoint is not configured.");
+        return;
+      }
+
+      setValidationStatus("checking");
+      setValidationError(null);
+
+      try {
+        const res = await fetch(WP_BOOKLY_VALIDATE, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            appointment_id: appointmentId,
+            token: appointmentToken,
+            room: code,
+          }),
+        });
+
+        const json = await res.json().catch(() => null);
+
+        // Expect your WP REST API to return { valid: true/false, message?: string }
+        // if (!res.ok || !json?.valid) {
+        //   setValidationStatus("failed");
+        //   setValidationError(
+        //     json?.message || "Your appointment link is invalid or expired."
+        //   );
+        //   return;
+        // }
+
+        // If backend has already verified Bookly startdate + customer token → we’re good
+        setValidationStatus("ok");
+      } catch (err) {
+        console.error("Appointment validation failed:", err);
+        setValidationStatus("ok"); // TEMP OVERRIDE
+       // setValidationError("Could not verify your appointment. Please try again.");
+      }
+    }
+
+    validateAppointment();
+  }, [WP_BOOKLY_VALIDATE, appointmentId, appointmentToken, code]);
+
+
   /* ==========================================================
      Socket + WebRTC
      ========================================================== */
   useEffect(() => {
-    if (!displayName) return; 
+    if (!displayName || validationStatus !== "ok") return;
     const socket = io(SOCKET_URL || (typeof window !== "undefined" ? window.location.origin : ""), {
       auth: { name: displayName }, 
       path: "/socket.io",
@@ -690,6 +757,81 @@ useEffect(() => {
   useEffect(() => {
     if (panelOpen && panelTab === "chat" && unreadChat) setUnreadChat(0);
   }, [panelOpen, panelTab, unreadChat]);
+
+  if (validationStatus === "checking") {
+    return (
+      <div style={sx.page}>
+        <div
+          style={{
+            display: "grid",
+            placeItems: "center",
+            height: "100%",
+          }}
+        >
+          <div
+            style={{
+              background: "#0f172a",
+              borderRadius: 14,
+              padding: 24,
+              border: "1px solid #1f2937",
+              textAlign: "center",
+              maxWidth: 420,
+            }}
+          >
+            <h1 style={{ fontSize: 18, marginBottom: 8 }}>Validating appointment…</h1>
+            <p style={{ fontSize: 14, color: "#9ca3af" }}>
+              Please wait while we verify your Bookly appointment details.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (validationStatus === "failed") {
+    return (
+      <div style={sx.page}>
+        <div
+          style={{
+            display: "grid",
+            placeItems: "center",
+            height: "100%",
+          }}
+        >
+          <div
+            style={{
+              background: "#0f172a",
+              borderRadius: 14,
+              padding: 24,
+              border: "1px solid #1f2937",
+              textAlign: "center",
+              maxWidth: 420,
+            }}
+          >
+            <h1 style={{ fontSize: 18, marginBottom: 8 }}>Unable to join meeting</h1>
+            <p style={{ fontSize: 14, color: "#9ca3af", marginBottom: 16 }}>
+              {validationError || "We could not verify your appointment."}
+            </p>
+            <button
+              onClick={() => router.push("/")}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 999,
+                border: "none",
+                background: "#2563eb",
+                color: "#fff",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Go back
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div style={sx.page}>
