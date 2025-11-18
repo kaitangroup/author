@@ -55,7 +55,7 @@ export default function StudentRegisterPage() {
         toast.error(data?.message || "Signup failed");
       } else {
         toast.success("🎉 Signup successful! Please log in.");
-        router.push("/auth/author/login");
+        router.push("/auth/user/login");
       }
     } catch (err) {
       console.error("❌ Signup Error:", err);

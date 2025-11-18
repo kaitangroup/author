@@ -179,21 +179,21 @@ useEffect(() => {
 
         const json = await res.json().catch(() => null);
 
-        // Expect your WP REST API to return { valid: true/false, message?: string }
-        // if (!res.ok || !json?.valid) {
-        //   setValidationStatus("failed");
-        //   setValidationError(
-        //     json?.message || "Your appointment link is invalid or expired."
-        //   );
-        //   return;
-        // }
+         // Expect your WP REST API to return { valid: true/false, message?: string }
+        if (!res.ok || !json?.valid) {
+          setValidationStatus("failed");
+          setValidationError(
+            json?.message || "Your appointment link is invalid or expired."
+          );
+          return;
+        }
 
         // If backend has already verified Bookly startdate + customer token → we’re good
         setValidationStatus("ok");
       } catch (err) {
         console.error("Appointment validation failed:", err);
         setValidationStatus("ok"); // TEMP OVERRIDE
-       // setValidationError("Could not verify your appointment. Please try again.");
+        setValidationError("Could not verify your appointment. Please try again.");
       }
     }
 
