@@ -16,8 +16,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-gray-50 text-gray-900`}>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${inter.className} bg-gray-50 text-gray-900`}
+        suppressHydrationWarning
+      >
         <Providers>
         <InitialOverlay minMs={400} oncePerTab={true} />
           {children}

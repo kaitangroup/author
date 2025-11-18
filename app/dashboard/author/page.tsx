@@ -413,61 +413,71 @@ export default function TutorDashboard() {
 
               {/* Recent Messages */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Recent Messages</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {loadingMessages && (
-                    <p className="text-sm text-gray-500">Loading messages...</p>
-                  )}
+  <CardHeader>
+    <CardTitle>Recent Messages</CardTitle>
+  </CardHeader>
+  <CardContent>
+    {loadingMessages && (
+      <p className="text-sm text-gray-500">Loading messages...</p>
+    )}
 
-                  {!loadingMessages && messagesError && (
-                    <p className="text-sm text-red-500">{messagesError}</p>
-                  )}
+    {!loadingMessages && messagesError && (
+      <p className="text-sm text-red-500">{messagesError}</p>
+    )}
 
-                  {!loadingMessages && !messagesError && recentMessages.length === 0 && (
-                    <p className="text-sm text-gray-500">No recent messages</p>
-                  )}
+    {!loadingMessages && !messagesError && recentMessages.length === 0 && (
+      <div className="text-center py-6">
+        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50">
+          <MessageCircle className="h-5 w-5 text-blue-500" />
+        </div>
+        <p className="text-sm font-medium text-gray-800">
+          You don&apos;t have any messages yet
+        </p>
+        <p className="mt-1 text-xs text-gray-500">
+          When a student contacts you, their messages will appear here.
+        </p>
+      </div>
+    )}
 
-                  {!loadingMessages && !messagesError && recentMessages.length > 0 && (
-                    <>
-                      {recentMessages.map((message) => (
-                        <div
-                          key={message.id}
-                          className="flex items-start gap-3 mb-4 last:mb-0"
-                        >
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={message.other_user.avatar} />
-                            <AvatarFallback>
-                              {message.other_user.name?.[0] ?? 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium">
-                              {message.other_user.name}
-                            </p>
-                            <p className="text-xs text-gray-500 truncate">
-                              {message.content}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              {message.timestamp}
-                            </p>
-                          </div>
-                          {message.unread && (
-                            <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                          )}
-                        </div>
-                      ))}
-                    </>
-                  )}
+    {!loadingMessages && !messagesError && recentMessages.length > 0 && (
+      <>
+        {recentMessages.map((message) => (
+          <div
+            key={message.id}
+            className="flex items-start gap-3 mb-4 last:mb-0"
+          >
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={message.other_user.avatar} />
+              <AvatarFallback>
+                {message.other_user.name?.[0] ?? 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">
+                {message.other_user.name}
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {message.content}
+              </p>
+              <p className="text-xs text-gray-400">
+                {message.timestamp}
+              </p>
+            </div>
+            {message.unread && (
+              <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+            )}
+          </div>
+        ))}
+      </>
+    )}
 
-                  <Link href="/messages">
-                    <Button variant="ghost" size="sm" className="w-full mt-3">
-                      View All Messages
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
+    <Link href="/messages">
+      <Button variant="ghost" size="sm" className="w-full mt-3">
+        View All Messages
+      </Button>
+    </Link>
+  </CardContent>
+</Card>
 
               {/* Performance Metrics */}
               <Card>
