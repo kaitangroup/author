@@ -141,6 +141,8 @@ useEffect(() => {
   }
 }, [session, status, nameFromQuery]);
 
+
+
   // ==========================================================
   // Bookly appointment validation (arg 2 = appointmentId, arg 3 = token)
   // ==========================================================
@@ -192,7 +194,7 @@ useEffect(() => {
         setValidationStatus("ok");
       } catch (err) {
         console.error("Appointment validation failed:", err);
-        setValidationStatus("ok"); // TEMP OVERRIDE
+        setValidationStatus("failed");
         setValidationError("Could not verify your appointment. Please try again.");
       }
     }
@@ -202,243 +204,260 @@ useEffect(() => {
 
 
   /* ==========================================================
-     Socket + WebRTC
-     ========================================================== */
-  useEffect(() => {
-    if (!displayName || validationStatus !== "ok") return;
-    const socket = io(SOCKET_URL || (typeof window !== "undefined" ? window.location.origin : ""), {
-      auth: { name: displayName }, 
-      path: "/socket.io",
-      timeout: 10000,
-      // default transports (polling -> upgrade) are most robust behind proxies
-    });
-    socketRef.current = socket;
+   Socket + WebRTC (updated: attach timer listeners here)
+   ========================================================== */
+useEffect(() => {
+console.log("Socket effect running with:", { displayName, validationStatus });
 
-    setSelfId(null);
-    socket.on("connect", () => setSelfId(socket.id ?? null));
+  if (!displayName || validationStatus !== "ok") return;
+ 
 
-    const peerConns = new Map<string, RTCPeerConnection>();
-    const audioMonitors = new Map<string, () => void>();
-    const pendingIce = new Map<string, RTCIceCandidateInit[]>();
+  const socket = io(SOCKET_URL || (typeof window !== "undefined" ? window.location.origin : ""), {
+    auth: { name: displayName },
+    path: "/socket.io",
+    timeout: 10000,
+  });
+  socketRef.current = socket;
 
-    async function flushPendingIce(id: string) {
-      const pc = peerConns.get(id);
-      if (!pc || !pc.remoteDescription) return;
-      const queue = pendingIce.get(id) ?? [];
-      while (queue.length) {
-        const cand = queue.shift()!;
-        try {
-          // Some servers send “null”/end-of-candidates markers: ignore gracefully
-          if (cand && (cand.candidate ?? "") !== "") {
-            await pc.addIceCandidate(new RTCIceCandidate(cand));
-          }
-        } catch (e) {
-          console.warn("addIceCandidate failed for", id, e);
+  setSelfId(null);
+  socket.on("connect", () => setSelfId(socket.id ?? null));
+  console.log("Socket connecting to", SOCKET_URL);
+
+  // --- Timer listeners (moved here so they attach to the right socket) ---
+  socket.on("timer-state", (state: { startedAt: number | null; duration: number } | null) => {
+    if (!state) return;
+    setDurationMin(state.duration as 30 | 60); // ensure types match your UI
+    if (state.startedAt) {
+      setStartedAt(state.startedAt);
+      setEndsAt(state.startedAt + state.duration * 60 * 1000);
+    } else {
+      setStartedAt(null);
+      setEndsAt(null);
+      setTimeLeftSec(0);
+    }
+  });
+
+  socket.on("timer-start", (payload: { startedAt: number; duration: number }) => {
+    if (!payload) return;
+    setDurationMin(payload.duration as 30 | 60);
+    setStartedAt(payload.startedAt);
+    setEndsAt(payload.startedAt + payload.duration * 60 * 1000);
+  });
+
+  const peerConns = new Map<string, RTCPeerConnection>();
+  const audioMonitors = new Map<string, () => void>();
+  const pendingIce = new Map<string, RTCIceCandidateInit[]>();
+
+  async function flushPendingIce(id: string) {
+    const pc = peerConns.get(id);
+    if (!pc || !pc.remoteDescription) return;
+    const queue = pendingIce.get(id) ?? [];
+    while (queue.length) {
+      const cand = queue.shift()!;
+      try {
+        if (cand && (cand.candidate ?? "") !== "") {
+          await pc.addIceCandidate(new RTCIceCandidate(cand));
         }
-      }
-    }
-    
-
-    async function ensurePeer(id: string): Promise<RTCPeerConnection> {
-      const existing = peerConns.get(id);
-      if (existing) return existing;
-
-
-      const pc = new RTCPeerConnection(ICE);
-      if (!pendingIce.has(id)) pendingIce.set(id, []);
-      peerConns.set(id, pc);
-
-      // Add local tracks
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track) => {
-          pc.addTrack(track, localStreamRef.current as MediaStream);
-        });
-      }
-
-      pc.onicecandidate = (ev) => {
-        if (ev.candidate) socket.emit("ice-candidate", { to: id, candidate: ev.candidate });
-      };
-
-      pc.ontrack = (ev) => {
-        const [remoteStream] = ev.streams;
-        if (!remoteStream) return;
-        setPeers((prev) => {
-          const copy: Record<string, PeerInfo> = { ...prev };
-          copy[id] = copy[id] || { pc, stream: remoteStream };
-          copy[id].stream = remoteStream;
-          return copy;
-        });
-        setStageId((curr) => curr ?? id); // first remote to stage
-        startRemoteAudioMonitor(id, remoteStream);
-      };
-
-      return pc;
-    }
-
-    function startRemoteAudioMonitor(id: string, stream: MediaStream) {
-      if (audioMonitors.has(id)) return;
-      try {
-        const AC: typeof AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
-        const ctx = new AC();
-        const src = ctx.createMediaStreamSource(stream);
-        const analyser = ctx.createAnalyser();
-        analyser.fftSize = 512;
-        const data = new Uint8Array(analyser.frequencyBinCount);
-        src.connect(analyser);
-        let raf = 0;
-        const tick = () => {
-          analyser.getByteFrequencyData(data);
-          const avg = data.reduce((a, b) => a + b, 0) / data.length;
-          if (!pinnedIdRef.current && avg > 16) {
-            setStageId((prev) => (prev !== id ? id : prev));
-          }
-          raf = requestAnimationFrame(tick);
-        };
-        tick();
-        audioMonitors.set(id, () => {
-          cancelAnimationFrame(raf);
-          try {
-            src.disconnect();
-            analyser.disconnect();
-            ctx.close();
-          } catch {}
-        });
-      } catch {
-        /* ignore if AudioContext not available */
-      }
-    }
-
-    async function initMedia() {
-      if (!navigator?.mediaDevices?.getUserMedia) {
-        alert("Camera/mic requires HTTPS (or localhost) in a modern browser.");
-        return;
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-      localStreamRef.current = stream;
-      setSelfStream(stream);
-      if (localVideoRef.current) {
-        (localVideoRef.current as HTMLVideoElement & { srcObject?: MediaStream }).srcObject = stream;
-      }
-      socket.emit("join", { room: code, displayName });
-    }
-
-    // Presence + Chat
-    socket.on("participants", ({ participants: list }: { participants: Participant[] }) => {
-      setParticipants(list);
-    });
-
-    socket.on("chat", (m: Message) => {
-      setMessages((prev) => [...prev, m]);
-      if (!(panelOpen && panelTab === "chat")) setUnreadChat((c) => c + 1);
-    });
-
-    // Signaling
-    socket.on("need-offer", async ({ targetId }: { targetId: string }) => {
-      const pc = await ensurePeer(targetId);
-      try {
-        const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
-        await pc.setLocalDescription(offer);
-        socket.emit("offer", { to: targetId, sdp: offer });
       } catch (e) {
-        console.error(e);
+        console.warn("addIceCandidate failed for", id, e);
       }
-    });
+    }
+  }
 
-    socket.on("offer", async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
-      const pc = await ensurePeer(from);
-      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit("answer", { to: from, sdp: answer });
-    
-      await flushPendingIce(from); // <— NEW
-    });
-    
+  async function ensurePeer(id: string): Promise<RTCPeerConnection> {
+    const existing = peerConns.get(id);
+    if (existing) return existing;
 
-    socket.on("answer", async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
-      const pc = peerConns.get(from);
-      if (!pc) return;
-      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-      await flushPendingIce(from); // <— NEW
-    });
-    
-    socket.on("ice-candidate", async ({ from, candidate }: { from: string; candidate: RTCIceCandidateInit | null }) => {
-      const pc = peerConns.get(from);
-      if (!pc) return;
-    
-      // Handle “end of candidates” / nulls without throwing
-      if (!candidate || (candidate.candidate ?? "") === "") return;
-    
-      if (!pc.remoteDescription) {
-        // Remote description not set yet → queue it
-        (pendingIce.get(from) ?? []).push(candidate);
-        pendingIce.set(from, pendingIce.get(from)!); // ensure map updated
-        return;
-      }
-    
-      try {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch (e) {
-        console.warn("addIceCandidate failed (live)", e);
-      }
-    });
-    
+    const pc = new RTCPeerConnection(ICE);
+    if (!pendingIce.has(id)) pendingIce.set(id, []);
+    peerConns.set(id, pc);
 
-    socket.on("user-left", ({ id }: { id: string }) => {
-      const pc = peerConns.get(id);
-      if (pc) {
-        pc.getSenders().forEach((s) => s.track && s.track.stop?.());
-        pc.close();
-      }
-      peerConns.delete(id);
-      pendingIce.delete(id);
+    // Add local tracks
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => {
+        pc.addTrack(track, localStreamRef.current as MediaStream);
+      });
+    }
+
+    pc.onicecandidate = (ev) => {
+      if (ev.candidate) socket.emit("ice-candidate", { to: id, candidate: ev.candidate });
+    };
+
+    pc.ontrack = (ev) => {
+      const [remoteStream] = ev.streams;
+      if (!remoteStream) return;
       setPeers((prev) => {
         const copy: Record<string, PeerInfo> = { ...prev };
-        delete copy[id];
+        copy[id] = copy[id] || { pc, stream: remoteStream };
+        copy[id].stream = remoteStream;
         return copy;
       });
-      setStageId((current) => (current === id ? (Object.keys(peers)[0] ?? null) : current));
-    });
+      setStageId((curr) => curr ?? id);
+      startRemoteAudioMonitor(id, remoteStream);
+    };
 
-    void initMedia();
+    return pc;
+  }
 
-    return () => {
-      try {
-        socket.disconnect();
-      } catch {}
-      peerConns.forEach((pc) => {
-        pc.getSenders().forEach((s) => s.track && s.track.stop?.());
-        pc.close();
-      });
-      peerConns.clear();
-      audioMonitors.forEach((stop) => {
+  function startRemoteAudioMonitor(id: string, stream: MediaStream) {
+    if (audioMonitors.has(id)) return;
+    try {
+      const AC: typeof AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AC();
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      src.connect(analyser);
+      let raf = 0;
+      const tick = () => {
+        analyser.getByteFrequencyData(data);
+        const avg = data.reduce((a, b) => a + b, 0) / data.length;
+        if (!pinnedIdRef.current && avg > 16) {
+          setStageId((prev) => (prev !== id ? id : prev));
+        }
+        raf = requestAnimationFrame(tick);
+      };
+      tick();
+      audioMonitors.set(id, () => {
+        cancelAnimationFrame(raf);
         try {
-          stop();
+          src.disconnect();
+          analyser.disconnect();
+          ctx.close();
         } catch {}
       });
-      audioMonitors.clear();
-      localStreamRef.current?.getTracks().forEach((t) => t.stop());
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, displayName, SOCKET_URL]);
+    } catch {
+      /* ignore if AudioContext not available */
+    }
+  }
+
+  async function initMedia() {
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      alert("Camera/mic requires HTTPS (or localhost) in a modern browser.");
+      return;
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    localStreamRef.current = stream;
+    setSelfStream(stream);
+    if (localVideoRef.current) {
+      (localVideoRef.current as HTMLVideoElement & { srcObject?: MediaStream }).srcObject = stream;
+    }
+    // join after we have local media
+    socket.emit("join", { room: code, displayName });
+  }
+
+  // Presence + Chat
+  socket.on("participants", ({ participants: list }: { participants: Participant[] }) => {
+    setParticipants(list);
+  });
+
+  socket.on("chat", (m: Message) => {
+    setMessages((prev) => [...prev, m]);
+    if (!(panelOpen && panelTab === "chat")) setUnreadChat((c) => c + 1);
+  });
+
+  // Signaling
+  socket.on("need-offer", async ({ targetId }: { targetId: string }) => {
+    const pc = await ensurePeer(targetId);
+    try {
+      const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+      await pc.setLocalDescription(offer);
+      socket.emit("offer", { to: targetId, sdp: offer });
+    } catch (e) {
+      console.error(e);
+    }
+  });
+
+  socket.on("offer", async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
+    const pc = await ensurePeer(from);
+    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socket.emit("answer", { to: from, sdp: answer });
+    await flushPendingIce(from);
+  });
+
+  socket.on("answer", async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
+    const pc = peerConns.get(from);
+    if (!pc) return;
+    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    await flushPendingIce(from);
+  });
+
+  socket.on("ice-candidate", async ({ from, candidate }: { from: string; candidate: RTCIceCandidateInit | null }) => {
+    const pc = peerConns.get(from);
+    if (!pc) return;
+
+    if (!candidate || (candidate.candidate ?? "") === "") return;
+
+    if (!pc.remoteDescription) {
+      (pendingIce.get(from) ?? []).push(candidate);
+      pendingIce.set(from, pendingIce.get(from)!);
+      return;
+    }
+
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(candidate));
+    } catch (e) {
+      console.warn("addIceCandidate failed (live)", e);
+    }
+  });
+
+  socket.on("user-left", ({ id }: { id: string }) => {
+    const pc = peerConns.get(id);
+    if (pc) {
+      pc.getSenders().forEach((s) => s.track && s.track.stop?.());
+      pc.close();
+    }
+    peerConns.delete(id);
+    pendingIce.delete(id);
+    setPeers((prev) => {
+      const copy: Record<string, PeerInfo> = { ...prev };
+      delete copy[id];
+      return copy;
+    });
+    setStageId((current) => (current === id ? (Object.keys(peers)[0] ?? null) : current));
+  });
+
+  // Start media acquisition / join flow
+  void initMedia();
+
+  // cleanup
+  return () => {
+    try {
+      socket.off("timer-state");
+      socket.off("timer-start");
+      socket.off("participants");
+      socket.off("chat");
+      socket.off("need-offer");
+      socket.off("offer");
+      socket.off("answer");
+      socket.off("ice-candidate");
+      socket.off("user-left");
+      socket.disconnect();
+    } catch {}
+
+    peerConns.forEach((pc) => {
+      pc.getSenders().forEach((s) => s.track && s.track.stop?.());
+      pc.close();
+    });
+    peerConns.clear();
+    audioMonitors.forEach((stop) => {
+      try {
+        stop();
+      } catch {}
+    });
+    audioMonitors.clear();
+    localStreamRef.current?.getTracks().forEach((t) => t.stop());
+  };
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [code, displayName, SOCKET_URL, validationStatus]);
 
   /* ==========================================================
      Timer: start when ≥2 participants, warn at T-5m, end at 0
      ========================================================== */
-  useEffect(() => {
-    const liveCount = participants.length;
-    if (startedAt == null && liveCount >= 2) {
-      const start = Date.now();
-      const end = start + durationMin * 60 * 1000;
-      setStartedAt(start);
-      setEndsAt(end);
-      setWarned5m(false);
-      socketRef.current?.emit("chat", {
-        room: code,
-        text: `⏱ Timer started for ${durationMin} min. Ends at ${new Date(end).toLocaleTimeString()}.`,
-      });
-    }
-  }, [participants, startedAt, durationMin, code]);
+
 
   useEffect(() => {
     if (!startedAt || !endsAt) return;
