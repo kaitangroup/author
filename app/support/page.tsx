@@ -84,23 +84,7 @@ export default function HelpCenterPage() {
   ];
 
   const supports = [
-    {
-      title: "Live Chat",
-      desc: "Chat with our support team",
-      cta: "Start Chat",
-      note: "Available 24/7",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className="h-6 w-6"
-        >
-          <path d="M4.5 3.75A2.25 2.25 0 0 0 2.25 6v7.5A2.25 2.25 0 0 0 4.5 15.75h2.69l3.47 3.47a.75.75 0 0 0 1.28-.53v-2.94h7.56A2.25 2.25 0 0 0 21.75 13.5V6A2.25 2.25 0 0 0 19.5 3.75h-15z" />
-        </svg>
-      ),
-      actionHref: "#",
-    },
+    
     {
       title: "Email Support",
       desc: "We'll respond within 24 hours",
@@ -181,7 +165,7 @@ export default function HelpCenterPage() {
           <h2 className="text-center text-xl font-semibold text-gray-900">Still need help?</h2>
           <p className="mt-2 text-center text-gray-600">Our support team is ready to assist you</p>
 
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-2">
             {supports.map((s) => (
               <div
                 key={s.title}

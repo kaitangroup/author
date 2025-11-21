@@ -90,7 +90,7 @@ export default function StudentRegisterPage() {
               <CardTitle className="text-2xl font-semibold text-gray-900">Create Your Account</CardTitle>
               <p className="text-gray-600 mt-1">
                 Already have an account?{" "}
-                <Link href="/auth/student/login" className="text-blue-600 hover:underline">
+                <Link href="/auth/user/login" className="text-blue-600 hover:underline">
                   Log in
                 </Link>
               </p>

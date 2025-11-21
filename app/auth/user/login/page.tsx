@@ -134,7 +134,7 @@ export default function StudentLoginPage() {
                   <CardTitle className="text-2xl font-normal text-gray-900">Log In</CardTitle>
                   <p className="text-gray-600">
                     Don&apos;t have an account?{" "}
-                    <Link href="/auth/student/register" className="text-blue-600 hover:underline">
+                    <Link href="/auth/user/register" className="text-blue-600 hover:underline">
                       Sign up for free.
                     </Link>
                   </p>
