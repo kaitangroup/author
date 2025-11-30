@@ -300,12 +300,12 @@ export default function StudentDashboard() {
                       )}
                     </Button>
                   </Link>
-                  {/* <Link href="/bookings">
+                  <Link href="/bookings">
                     <Button variant="outline" className="w-full justify-start">
                       <Calendar className="h-4 w-4 mr-3" />
                       Manage Bookings
                     </Button>
-                  </Link> */}
+                  </Link>
                 </CardContent>
               </Card>
 

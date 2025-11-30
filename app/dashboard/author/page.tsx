@@ -55,7 +55,7 @@ export default function TutorDashboard() {
     : [];
 
     const pendingBookings = authorDashboard && Array.isArray(authorDashboard.bookings)
-    ? authorDashboard.bookings.filter((booking: any) => booking?.status === 'pending')
+    ? authorDashboard.bookings.filter((booking: any) => booking?.status === 'completed')
     : [];
 
 
@@ -270,6 +270,31 @@ export default function TutorDashboard() {
                 </CardContent>
               </Card>
 
+              {pendingBookings.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Completed Meetings</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {pendingBookings.map((booking) => (
+                        <div key={booking.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                          <Avatar>
+                            <AvatarFallback>ST</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <h4 className="font-medium">{booking.subject} Request</h4>
+                            <p className="text-sm text-gray-600">Student: Jane Smith</p>
+                            <p className="text-sm text-gray-600">{booking.date} at {booking.time}</p>
+                          </div>
+                         
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
             {/* My Books */}
             {Array.isArray((authorDashboard as any)?.books) && (authorDashboard as any).books.length > 0 && (
                 <Card>
@@ -335,34 +360,8 @@ export default function TutorDashboard() {
                 </Card>
               )}
 
-              {/* Pending Requests
-              {pendingBookings.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Pending Booking Requests</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {pendingBookings.map((booking) => (
-                        <div key={booking.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                          <Avatar>
-                            <AvatarFallback>ST</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <h4 className="font-medium">{booking.subject} Request</h4>
-                            <p className="text-sm text-gray-600">Student: Jane Smith</p>
-                            <p className="text-sm text-gray-600">{booking.date} at {booking.time}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline">Decline</Button>
-                            <Button size="sm" className="bg-green-600 hover:bg-green-700">Accept</Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )} */}
+              {/* Pending Requests */}
+             
 
               {/* Earnings Chart */}
               <Card>
