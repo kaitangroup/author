@@ -61,6 +61,25 @@ export interface WPUser  {
   location_city_state?: string;
 };
 
+export interface StudentDashboard {
+  id: number;
+  name: string;
+  email : string;
+  avatar: string;
+  messages: string[];
+  bookings: {
+    appointment_id: number;
+    book_title: string;
+    student_name: string;
+    date: string;
+    amount: number;
+    status: string;
+  }
+  totalStudents: number;
+  averageRating: GLfloat;
+  
+};
+
 export interface AuthorDashboard {
   monthlyEarnings: any;
   totalEarnings: any;
@@ -82,3 +101,4 @@ export interface AuthorDashboard {
   averageRating: GLfloat;
   
 };
+

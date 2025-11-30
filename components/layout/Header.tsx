@@ -150,12 +150,14 @@ export function Header() {
                       Edit Profile
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/books">
-                      <BookOpen className="h-4 w-4 mr-2" />
-                      Manage Books
-                    </Link>
-                  </DropdownMenuItem>
+                  {userType === 'author' && (
+  <DropdownMenuItem asChild>
+    <Link href="/books">
+      <BookOpen className="h-4 w-4 mr-2" />
+      Manage Books
+    </Link>
+  </DropdownMenuItem>
+)}
                   <DropdownMenuItem asChild>
                     <Link href="/messages">
                       <MessageCircle className="h-4 w-4 mr-2" />
@@ -211,6 +213,12 @@ export function Header() {
                     <DropdownMenuItem asChild>
                       <Link href="/messages">Messages</Link>
                     </DropdownMenuItem>
+                    {userType === 'author' && (
+  <DropdownMenuItem asChild>
+    <Link href="/books">Manage Books</Link>
+  </DropdownMenuItem>
+)}
+
                     <DropdownMenuItem asChild>
                       <Link href="/bookings">Bookings</Link>
                     </DropdownMenuItem>

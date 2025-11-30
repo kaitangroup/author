@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,131 +8,22 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Clock, MessageCircle, Video, Star } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  MessageCircle,
+  Video,
+  Star,
+} from 'lucide-react';
+import { mockBookings } from '@/lib/mockData';
 import { toast } from 'sonner';
-import { useSession } from 'next-auth/react';
-import { WPUser } from '@/lib/types';
-
-// 👉 তোমার WordPress base URL
-// .env এ NEXT_PUBLIC_WP_API_BASE থাকলে ওটা use হবে
-const WP_API_BASE =
-  process.env.NEXT_PUBLIC_WP_API_BASE || 'https://your-wp-site.com/wp-json';
-
-type BookingStatus = 'confirmed' | 'pending' | 'completed';
-
-type Booking = {
-  id: string;
-  subject: string;
-  tutorName: string;
-  tutorAvatar: string;
-  date: string;
-  time: string;
-  duration: number;
-  amount: number;
-  status: BookingStatus;
-};
 
 export default function BookingsPage() {
-  const { data: session, status } = useSession();
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [bookings] = useState(mockBookings);
 
-  // =============================
-  // WP REST: /custom/v1/dashboard-student
-  // =============================
-  useEffect(() => {
-    if (status !== 'authenticated') return;
-
-    const fetchBookings = async () => {
-      try {
-        const user = session?.user as WPUser;
-
-        const url = `${WP_API_BASE}/custom/v1/dashboard-student?id=${user.id}`;
-        const res = await fetch(url);
-
-        if (!res.ok) throw new Error('Failed to load bookings');
-
-        const data = await res.json();
-        const wpBookings = data.bookings || [];
-
-        // console.log('RAW WP bookings:', wpBookings);
-
-        const mapped: Booking[] = wpBookings.map((b: any) => {
-          // start_date usually "2024-01-20 10:00:00"
-          const startStr =
-            b.start_date || b.start || b.start_time || b.date || '';
-          const start = startStr ? new Date(startStr) : new Date();
-
-          const dateStr = start.toISOString().slice(0, 10); // 2024-01-20
-          const timeStr = start.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-          });
-
-          // duration
-          const durationMin =
-            Number(b.duration) ||
-            Number(b.duration_min) ||
-            (b.end_date
-              ? Math.round(
-                  (new Date(b.end_date).getTime() - start.getTime()) / 60000
-                )
-              : 60);
-
-          // price
-          const price =
-            Number(b.price) ||
-            Number(b.total) ||
-            Number(b.amount) ||
-            Number(b.payment) ||
-            0;
-
-          // status map
-          const rawStatus = String(b.status || '').toLowerCase();
-          let status: BookingStatus = 'pending';
-          if (['approved', 'confirmed', 'active'].includes(rawStatus)) {
-            status = 'confirmed';
-          } else if (
-            ['completed', 'done', 'finished'].includes(rawStatus)
-          ) {
-            status = 'completed';
-          }
-
-          return {
-            id: String(b.id || b.appointment_id || b.booking_id),
-            subject: b.service_title || b.service || 'Lesson',
-            tutorName: b.staff_name || b.tutor_name || 'Tutor',
-            tutorAvatar:
-              b.staff_avatar || b.tutor_avatar || data.avatar || '',
-            date: dateStr,
-            time: timeStr,
-            duration: durationMin,
-            amount: price,
-            status,
-          };
-        });
-
-        setBookings(mapped);
-      } catch (error) {
-        console.error(error);
-        toast.error('Could not load your bookings');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBookings();
-  }, [session, status]);
-
-  const upcomingBookings = bookings.filter(
-    (booking) => booking.status === 'confirmed'
-  );
-  const pendingBookings = bookings.filter(
-    (booking) => booking.status === 'pending'
-  );
-  const pastBookings = bookings.filter(
-    (booking) => booking.status === 'completed'
-  );
+  const upcomingBookings = bookings.filter((booking) => booking.status === 'confirmed');
+  const pendingBookings = bookings.filter((booking) => booking.status === 'pending');
+  const pastBookings = bookings.filter((booking) => booking.status === 'completed');
 
   const handleJoinLesson = (bookingId: string) => {
     toast.info('Joining lesson...');
@@ -150,7 +41,7 @@ export default function BookingsPage() {
     booking,
     showActions = true,
   }: {
-    booking: Booking;
+    booking: any;
     showActions?: boolean;
   }) => (
     <Card className="mb-4">
@@ -184,6 +75,7 @@ export default function BookingsPage() {
               >
                 {booking.status}
               </Badge>
+
             </div>
 
             {/* Date / time / price */}
@@ -290,20 +182,6 @@ export default function BookingsPage() {
       </CardContent>
     </Card>
   );
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="py-8 px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            Loading bookings...
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">

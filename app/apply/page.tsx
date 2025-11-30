@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Check, Plus, X, DollarSign, Clock, Users, Star, Camera } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@radix-ui/react-avatar';
+import {RoleGuard} from "@/components/auth/RoleGuard";
 
 interface ProfileData {
   firstName: string;
@@ -821,6 +822,7 @@ export default function TutorApplicationPage() {
   };
 
   return (
+    <RoleGuard allowed={['author']} redirectTo="/">
     <div className="min-h-screen bg-gray-50">
       <Header />
       
@@ -1010,5 +1012,6 @@ export default function TutorApplicationPage() {
       
       <Footer />
     </div>
+    </RoleGuard>
   );
 }

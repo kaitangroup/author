@@ -13,6 +13,7 @@ import {
 import Link from 'next/link';
 import { mockBookings, mockMessages } from '@/lib/mockData';
 import { AuthorDashboard } from '@/lib/types';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 
 
 
@@ -44,14 +45,17 @@ export default function StudentDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [authorDashboard, setAuthorDashboard] = useState<AuthorDashboard | null>();
+  const totalBookings = authorDashboard?.bookings
+  ? Object.keys(authorDashboard.bookings).length
+  : 0;
   const upcomingBookings = authorDashboard && Array.isArray(authorDashboard.bookings)
-  ? authorDashboard.bookings.filter((booking: any) => booking?.status === 'pending')
+  ? authorDashboard.bookings.filter((booking: any) => booking?.status === 'approved')
   : [];
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem('wpToken');
-        const res = await fetch(`${apiUrl}wp-json/custom/v1/dashboard`, {
+        const res = await fetch(`${apiUrl}wp-json/custom/v1/dashboard-student`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -126,6 +130,7 @@ export default function StudentDashboard() {
   }, [apiUrl, wpToken]);
 
   return (
+    <RoleGuard allowed={['subscriber']} redirectTo="/">
     <div className="min-h-screen bg-background">
       <Header />
       
@@ -138,7 +143,7 @@ export default function StudentDashboard() {
           </div>
 
           {/* Quick Stats */}
-          <div className="grid md:grid-cols-4 gap-6 mb-8">
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3">
@@ -146,7 +151,7 @@ export default function StudentDashboard() {
                     <BookOpen className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{mockBookings.length}</p>
+                    <p className="text-2xl font-bold">{totalBookings}</p>
                     <p className="text-sm text-gray-600">Total Meetings</p>
                   </div>
                 </div>
@@ -181,19 +186,7 @@ export default function StudentDashboard() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3">
-                  <div className="bg-purple-100 p-3 rounded-lg">
-                    <CreditCard className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">$135</p>
-                    <p className="text-sm text-gray-600">This Month</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+ 
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
@@ -307,12 +300,12 @@ export default function StudentDashboard() {
                       )}
                     </Button>
                   </Link>
-                  <Link href="/bookings">
+                  {/* <Link href="/bookings">
                     <Button variant="outline" className="w-full justify-start">
                       <Calendar className="h-4 w-4 mr-3" />
                       Manage Bookings
                     </Button>
-                  </Link>
+                  </Link> */}
                 </CardContent>
               </Card>
 
@@ -426,5 +419,6 @@ export default function StudentDashboard() {
       
       <Footer />
     </div>
+    </RoleGuard>
   );
 }

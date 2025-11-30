@@ -13,6 +13,7 @@ import {
 import Link from 'next/link';
 import { mockBookings, mockMessages } from '@/lib/mockData';
 import { AuthorDashboard } from '@/lib/types';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 
 import { useSession } from "next-auth/react";
 
@@ -140,6 +141,7 @@ export default function TutorDashboard() {
 
 
   return (
+    <RoleGuard allowed={['author']} redirectTo="/">
     <div className="min-h-screen bg-background">
       <Header />
       
@@ -515,5 +517,6 @@ export default function TutorDashboard() {
       
       <Footer />
     </div>
+    </RoleGuard>
   );
 }
