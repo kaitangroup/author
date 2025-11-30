@@ -5,7 +5,7 @@ import { RoleGuard } from '@/components/auth/RoleGuard';
 
 export default function Home() {
   return (
-    <RoleGuard allowed={['subscriber']} redirectTo="/">
+    <RoleGuard allowed={['author']} redirectTo="/">
     <main className="min-h-screen bg-white">
       <Header />
     <div className="min-h-screen bg-gray-50">
