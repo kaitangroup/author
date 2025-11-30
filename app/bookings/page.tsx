@@ -222,7 +222,7 @@ export default function BookingsPage() {
                   </>
                 )}
 
-                {booking.status !== 'approved' &&
+                {/* {booking.status !== 'approved' &&
                   booking.status !== 'pending' && (
                     <>
                       <Button
@@ -241,7 +241,7 @@ export default function BookingsPage() {
                         Book Again
                       </Button>
                     </>
-                  )}
+                  )} */}
               </div>
             )}
           </div>
