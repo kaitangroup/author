@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -16,59 +16,52 @@ import { useSession, signOut } from 'next-auth/react';
 
 export function Header() {
   const router = useRouter();
-  const { data: session, status } = useSession(); // ✅ NextAuth session
+  const { data: session, status } = useSession();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profileEditLink, setProfileEditLink] = useState('profile/edit');
   const [userType, setUserType] = useState<'student' | 'author'>('student');
   const [wpUser, setWpUser] = useState<string | null>(null);
 
-  // ✅ check login status on mount
   useEffect(() => {
     if (session?.wpToken) {
-      localStorage.setItem("wpToken", session.wpToken);
-      localStorage.setItem("wpUser", session.user?.name || "");
+      localStorage.setItem('wpToken', session.wpToken);
+      localStorage.setItem('wpUser', session.user?.name || '');
     }
-  
-    const token = localStorage.getItem("wpToken");
-    const user = localStorage.getItem("wpUser");
-    const profiledata = localStorage.getItem("wpUserdata");
-  
-    console.log("Session:", session);
-  
+
+    const token = localStorage.getItem('wpToken');
+    const user = localStorage.getItem('wpUser');
+    const profiledata = localStorage.getItem('wpUserdata');
+
     setWpUser(user);
-  
+
     if (profiledata) {
       try {
         const profile = JSON.parse(profiledata);
-        if (profile.role === "author") {
-          setUserType("author");
-          setProfileEditLink("apply");
+        if (profile.role === 'author') {
+          setUserType('author');
+          setProfileEditLink('apply');
         } else {
-          setUserType("student");
-          setProfileEditLink("profile/edit");
+          setUserType('student');
+          setProfileEditLink('profile/edit');
         }
       } catch (e) {
-        console.error("Invalid wpUserdata JSON", e);
+        console.error('Invalid wpUserdata JSON', e);
       }
     }
-  
+
     setIsLoggedIn(!!(token || session));
   }, [session, status]);
-  
 
-  // ✅ handle logout
   const handleLogout = async () => {
-    // WP logout
-    localStorage.removeItem("wpToken");
-    localStorage.removeItem("wpUser");
-    localStorage.removeItem("wpUserdata");
+    localStorage.removeItem('wpToken');
+    localStorage.removeItem('wpUser');
+    localStorage.removeItem('wpUserdata');
 
-    // NextAuth logout (if logged in via social)
-    await signOut({ callbackUrl: "/auth/user/login" });
+    await signOut({ callbackUrl: '/auth/user/login' });
 
     setIsLoggedIn(false);
-    toast.success("You have been logged out successfully");
-    router.push("/auth/user/login");
+    toast.success('You have been logged out successfully');
+    router.push('/auth/user/login');
   };
 
   return (
@@ -83,27 +76,41 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/search" className="text-gray-600 hover:text-blue-600 transition-colors">
+            <Link
+              href="/search"
+              className="text-gray-600 hover:text-blue-600 transition-colors"
+            >
               Find Authors
             </Link>
-            <Link href="/about" className="text-gray-600 hover:text-blue-600 transition-colors">
+            <Link
+              href="/about"
+              className="text-gray-600 hover:text-blue-600 transition-colors"
+            >
               About
             </Link>
-            <Link href="/blogs" className="text-gray-600 hover:text-blue-600 transition-colors">
+            <Link
+              href="/blogs"
+              className="text-gray-600 hover:text-blue-600 transition-colors"
+            >
               Blogs
             </Link>
-            <Link href="/contact" className="text-gray-600 hover:text-blue-600 transition-colors">
+            <Link
+              href="/contact"
+              className="text-gray-600 hover:text-blue-600 transition-colors"
+            >
               Contact
             </Link>
           </nav>
 
-          {/* Auth Buttons / User Menu */}
+          {/* Right side */}
           <div className="flex items-center space-x-4">
+            {/* Desktop Auth / User menu */}
             {!isLoggedIn ? (
-              <>
-                 <Link href="/auth/user/login">
-              <Button variant="ghost">Login</Button>
-            </Link>
+              // 👉 only desktop
+              <div className="hidden md:flex items-center space-x-4">
+                <Link href="/auth/user/login">
+                  <Button variant="ghost">Login</Button>
+                </Link>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -118,13 +125,16 @@ export function Header() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </>
+              </div>
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
+                  {/* Mobile e শুধু icon, md+ e icon + name */}
                   <Button variant="ghost" size="sm">
-                    <User className="h-4 w-4 mr-2" />
-                    {session?.user?.name || wpUser || "Account"}
+                    <User className="h-4 w-4 mr-0 md:mr-2" />
+                    <span className="hidden md:inline-block">
+                      {session?.user?.name || wpUser || 'Account'}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -134,7 +144,7 @@ export function Header() {
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
-                                    <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild>
                     <Link href={`/${profileEditLink}`}>
                       <User className="h-4 w-4 mr-2" />
                       Edit Profile
@@ -146,7 +156,6 @@ export function Header() {
                       Manage Books
                     </Link>
                   </DropdownMenuItem>
-
                   <DropdownMenuItem asChild>
                     <Link href="/messages">
                       <MessageCircle className="h-4 w-4 mr-2" />
@@ -159,7 +168,7 @@ export function Header() {
                       Bookings
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={handleLogout}
                     className="text-red-600 focus:text-red-600"
                   >
@@ -169,19 +178,61 @@ export function Header() {
               </DropdownMenu>
             )}
 
-            {/* Mobile Menu */}
+            {/* Mobile Menu (nav + auth) */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="md:hidden">
                   <Menu className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-56">
+                {/* Auth options for mobile */}
+                {!isLoggedIn ? (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/auth/user/login">Login</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/auth/user/register">Sign Up as Student</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/auth/author/register">Sign Up as Author</Link>
+                    </DropdownMenuItem>
+                    <div className="border-t my-1" />
+                  </>
+                ) : (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/dashboard/${userType}`}>Dashboard</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/${profileEditLink}`}>Edit Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/messages">Messages</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/bookings">Bookings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="text-red-600 focus:text-red-600"
+                    >
+                      Logout
+                    </DropdownMenuItem>
+                    <div className="border-t my-1" />
+                  </>
+                )}
+
+                {/* Common nav links */}
                 <DropdownMenuItem asChild>
                   <Link href="/search">Find Authors</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/about">About</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/blogs">Blogs</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/contact">Contact</Link>
@@ -194,4 +245,3 @@ export function Header() {
     </header>
   );
 }
-

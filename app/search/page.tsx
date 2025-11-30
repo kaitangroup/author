@@ -231,9 +231,11 @@ export default function SearchPage() {
           </div>
 
           {/* Layout: sidebar + grid */}
-          <div className="flex gap-8 items-start">
+          {/* 👇 Ekhane flex-col lg:flex-row kore dilam */}
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
             {showFilters && (
-              <div className="w-80 flex-shrink-0">
+              // 👇 Mobile e full width, large e 320px sidebar
+              <div className="w-full lg:w-80 flex-shrink-0">
                 <SearchFilters
                   filters={filters}
                   onFiltersChange={(nf) => {
@@ -303,7 +305,6 @@ export default function SearchPage() {
                           </p>
                         )}
                       </div>
-
 
                       {/* Search type checkboxes */}
                       <div className="text-left mb-4 mt-3">

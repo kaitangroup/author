@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';   // ← added useRouter
+import { useParams, useRouter } from 'next/navigation';
+import NextLink from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -10,27 +11,34 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { BookingModal } from '@/components/booking/BookingModal';
-import { Star, MapPin, Clock, MessageCircle, Calendar, GraduationCap, Globe, Award, Link } from 'lucide-react';
+import {
+  Star,
+  MapPin,
+  Clock,
+  MessageCircle,
+  Calendar,
+  GraduationCap,
+  Globe,
+  Award,
+} from 'lucide-react';
 import { mockTutors } from '@/lib/mockData';
-import { useSession } from "next-auth/react";
+import { useSession } from 'next-auth/react';
 import { WPUser } from '@/lib/types';
-
-
 
 export default function TutorProfilePage() {
   const params = useParams();
-  const router = useRouter();                     // ← init router
+  const router = useRouter();
   const { data: session, status } = useSession();
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [author, setAuthor] = useState<WPUser>();
   const [loading, setLoading] = useState<boolean>(true);
-  
-  const tutor = mockTutors.find(t => t.id == '1');
+
+  const tutor = mockTutors.find((t) => t.id == '1');
 
   useEffect(() => {
     const abortCtrl = new AbortController();
     async function fetchUsers() {
-      setLoading(true);     
+      setLoading(true);
       try {
         const base = (process.env.NEXT_PUBLIC_WP_URL ?? '').replace(/\/+$/, '');
         if (!base) throw new Error('NEXT_PUBLIC_WP_URL is not set');
@@ -51,8 +59,6 @@ export default function TutorProfilePage() {
     fetchUsers();
     return () => abortCtrl.abort();
   }, [params.id]);
-
-
 
   if (loading) {
     return (
@@ -78,7 +84,6 @@ export default function TutorProfilePage() {
   }
 
   if (!author && !tutor) {
-    
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -88,37 +93,47 @@ export default function TutorProfilePage() {
         <Footer />
       </div>
     );
-  
   }
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <div className="py-8 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid gap-8 lg:grid-cols-3">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
               {/* Profile Header */}
               <Card>
                 <CardContent className="p-6">
-                  <div className="flex items-start gap-6">
-                    <Avatar className="h-24 w-24">
-                      <AvatarImage src={author?.avatar} alt={author?.name} />
-                      <AvatarFallback className="text-lg">
-                        {author?.name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1">
-                      <h1 className="text-3xl font-bold mb-2">{author?.name}</h1>
-                      
-                      <div className="flex items-center gap-4 mb-4">
+                  <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6">
+                    {/* Avatar */}
+                    <div className="flex md:block w-full md:w-auto justify-center md:justify-start">
+                      <Avatar className="h-24 w-24 md:h-28 md:w-28">
+                        <AvatarImage src={author?.avatar} alt={author?.name} />
+                        <AvatarFallback className="text-lg">
+                          {author?.name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+
+                    <div className="flex-1 w-full">
+                      <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-center md:text-left">
+                        {author?.name}
+                      </h1>
+
+                      {/* Rating + location + response */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4 text-sm sm:text-base justify-center md:justify-start">
                         <div className="flex items-center gap-1">
-                          <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                          <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-yellow-400 text-yellow-400" />
                           <span className="font-medium">{tutor?.rating}</span>
-                          <span className="text-gray-500">({tutor?.reviewCount} reviews)</span>
+                          <span className="text-gray-500">
+                            ({tutor?.reviewCount} reviews)
+                          </span>
                         </div>
                         <div className="flex items-center gap-1 text-gray-600">
                           <MapPin className="h-4 w-4" />
@@ -130,7 +145,8 @@ export default function TutorProfilePage() {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2 mb-4">
+                      {/* Subjects */}
+                      <div className="flex flex-wrap gap-2 mb-4 justify-center md:justify-start">
                         {author?.subjects?.map((subject) => (
                           <Badge key={subject.trim()} variant="secondary">
                             {subject.trim()}
@@ -138,8 +154,9 @@ export default function TutorProfilePage() {
                         ))}
                       </div>
 
-                      <div className="flex items-center gap-2 text-green-600">
-                        <div className="h-2 w-2 bg-green-600 rounded-full"></div>
+                      {/* Availability */}
+                      <div className="flex items-center gap-2 text-green-600 justify-center md:justify-start">
+                        <div className="h-2 w-2 bg-green-600 rounded-full" />
                         <span className="font-medium">{tutor?.availability}</span>
                       </div>
                     </div>
@@ -149,72 +166,82 @@ export default function TutorProfilePage() {
 
               {/* About */}
               <Card>
-                <CardHeader>
-                  <CardTitle>About Me</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 leading-relaxed">{author?.bio}</p>
-                </CardContent>
-              </Card>
+              <CardHeader className="text-center md:text-left">
+                <CardTitle>About Me</CardTitle>
+              </CardHeader>
+
+              <CardContent className="text-center md:text-left">
+                <p className="text-gray-600 leading-relaxed">
+                  {author?.bio}
+                </p>
+              </CardContent>
+            </Card>
+
 
               {/* My Books */}
-              {Array.isArray((author as any)?.books) && (author as any).books.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>My Books</CardTitle>
-                    <Link href="/books" className="text-blue-600 text-sm font-medium hover:underline">
-        Manage All Books →
-      </Link>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-sm text-left">
-                        <thead>
-                          <tr className="text-gray-500 border-b">
-                            <th className="py-3 px-4 font-medium">Book</th>
-                            <th className="py-3 px-4 font-medium">Link</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(author as any).books.slice(0, 4).map((book: any) => (
-                            <tr
-                              key={book.id}
-                              className="border-b last:border-b-0 hover:bg-muted/60 transition-colors"
-                            >
-                              <td className="py-3 px-4">
-                                <div className="flex items-center gap-3">
-                                  {book.featured_image && (
-                                    <img
-                                      src={book.featured_image}
-                                      alt={book.title}
-                                      className="h-12 w-12 rounded-md object-cover border"
-                                    />
-                                  )}
-                                  <span className="font-medium">{book.title}</span>
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">
-                                {book.book_url ? (
-                                  <a
-                                    href={book.book_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 hover:underline font-medium"
-                                  >
-                                    View Book →
-                                  </a>
-                                ) : (
-                                  <span className="text-gray-400">No link available</span>
-                                )}
-                              </td>
+              {Array.isArray((author as any)?.books) &&
+                (author as any).books.length > 0 && (
+                  <Card>
+                    <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <CardTitle>My Books</CardTitle>
+                      <NextLink
+                        href="/books"
+                        className="text-blue-600 text-sm font-medium hover:underline"
+                      >
+                        Manage All Books →
+                      </NextLink>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full text-sm text-left">
+                          <thead>
+                            <tr className="text-gray-500 border-b">
+                              <th className="py-3 px-4 font-medium">Book</th>
+                              <th className="py-3 px-4 font-medium">Link</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                          </thead>
+                          <tbody>
+                            {(author as any).books.slice(0, 4).map((book: any) => (
+                              <tr
+                                key={book.id}
+                                className="border-b last:border-b-0 hover:bg-muted/60 transition-colors"
+                              >
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-3">
+                                    {book.featured_image && (
+                                      <img
+                                        src={book.featured_image}
+                                        alt={book.title}
+                                        className="h-12 w-12 rounded-md object-cover border"
+                                      />
+                                    )}
+                                    <span className="font-medium">{book.title}</span>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  {book.book_url ? (
+                                    <a
+                                      href={book.book_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:underline font-medium"
+                                    >
+                                      View Book →
+                                    </a>
+                                  ) : (
+                                    <span className="text-gray-400">
+                                      No link available
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
               {/* Experience & Education */}
               <Card>
@@ -222,22 +249,24 @@ export default function TutorProfilePage() {
                   <CardTitle>Experience & Education</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <GraduationCap className="h-5 w-5 text-blue-600" />
+                  <div className="flex items-start gap-3">
+                    <GraduationCap className="h-5 w-5 text-blue-600 mt-1" />
                     <div>
                       <p className="font-medium">Education</p>
                       <p className="text-gray-600">{author?.education}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Award className="h-5 w-5 text-blue-600" />
+                  <div className="flex items-start gap-3">
+                    <Award className="h-5 w-5 text-blue-600 mt-1" />
                     <div>
                       <p className="font-medium">Teaching Experience</p>
-                      <p className="text-gray-600">{author?.teaching_experience}</p>
+                      <p className="text-gray-600">
+                        {author?.teaching_experience}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Globe className="h-5 w-5 text-blue-600" />
+                  <div className="flex items-start gap-3">
+                    <Globe className="h-5 w-5 text-blue-600 mt-1" />
                     <div>
                       <p className="font-medium">Languages</p>
                       <p className="text-gray-600">{author?.languages}</p>
@@ -252,21 +281,32 @@ export default function TutorProfilePage() {
                   <CardTitle>Reviews ({tutor?.reviewCount})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {tutor?.reviews && tutor?.reviews.length > 0 ? (
+                  {tutor?.reviews && tutor.reviews.length > 0 ? (
                     <div className="space-y-4">
-                      {tutor?.reviews.map((review) => (
-                        <div key={review.id} className="border-b last:border-b-0 pb-4 last:pb-0">
-                          <div className="flex items-center gap-2 mb-2">
+                      {tutor.reviews.map((review) => (
+                        <div
+                          key={review.id}
+                          className="border-b last:border-b-0 pb-4 last:pb-0"
+                        >
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
                             <div className="flex items-center">
                               {[...Array(5)].map((_, i) => (
                                 <Star
                                   key={i}
-                                  className={`h-4 w-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                                  className={`h-4 w-4 ${
+                                    i < review.rating
+                                      ? 'fill-yellow-400 text-yellow-400'
+                                      : 'text-gray-300'
+                                  }`}
                                 />
                               ))}
                             </div>
-                            <span className="font-medium">{review.studentName}</span>
-                            <span className="text-gray-500 text-sm">{review.date}</span>
+                            <span className="font-medium">
+                              {review.studentName}
+                            </span>
+                            <span className="text-gray-500 text-sm">
+                              {review.date}
+                            </span>
                           </div>
                           <p className="text-gray-600">{review.comment}</p>
                         </div>
@@ -281,7 +321,7 @@ export default function TutorProfilePage() {
 
             {/* Booking Sidebar */}
             <div className="space-y-6">
-              <Card className="sticky top-24">
+              <Card className="lg:sticky lg:top-24">
                 <CardContent className="p-6">
                   <div className="text-center mb-6">
                     <div className="text-3xl font-bold text-blue-600 mb-2">
@@ -291,32 +331,36 @@ export default function TutorProfilePage() {
                   </div>
 
                   <div className="space-y-3">
-                   <Button 
-  className="w-full bg-blue-600 hover:bg-blue-700"
-  onClick={() => {
-    if (status === "loading") return;
+                    <Button
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      onClick={() => {
+                        if (status === 'loading') return;
 
-    const wpToken = typeof window !== "undefined" 
-      ? localStorage.getItem("wpToken") 
-      : null;
-    const isLoggedIn = !!(wpToken || session);
+                        const wpToken =
+                          typeof window !== 'undefined'
+                            ? localStorage.getItem('wpToken')
+                            : null;
+                        const isLoggedIn = !!(wpToken || session);
 
-    if (!isLoggedIn) {
-      router.push(`/auth/user/login?redirect=/tutors/${author?.id}`);
-    } else {
-      setShowBookingModal(true);
-    }
-  }}
->
-  <Calendar className="mr-2 h-4 w-4" />
-  Book a Lesson
-</Button>
+                        if (!isLoggedIn) {
+                          router.push(
+                            `/auth/user/login?redirect=/tutors/${author?.id}`
+                          );
+                        } else {
+                          setShowBookingModal(true);
+                        }
+                      }}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Book a Lesson
+                    </Button>
 
-                    
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={() => router.push(`/messages?to=${author?.id}`)}   // ← GO TO MESSAGES WITH to=<id>
+                      onClick={() =>
+                        router.push(`/messages?to=${author?.id}`)
+                      }
                     >
                       <MessageCircle className="mr-2 h-4 w-4" />
                       Send Message
@@ -328,7 +372,9 @@ export default function TutorProfilePage() {
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Response time:</span>
-                      <span className="font-medium">{tutor?.responseTime}</span>
+                      <span className="font-medium">
+                        {tutor?.responseTime}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Lessons taught:</span>
@@ -346,12 +392,14 @@ export default function TutorProfilePage() {
         </div>
       </div>
 
-      <BookingModal 
-        isOpen={showBookingModal}
-        onClose={() => setShowBookingModal(false)}
-        tutor={author!}
-      />
-      
+      {author && (
+        <BookingModal
+          isOpen={showBookingModal}
+          onClose={() => setShowBookingModal(false)}
+          tutor={author}
+        />
+      )}
+
       <Footer />
     </div>
   );

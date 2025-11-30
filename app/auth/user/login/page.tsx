@@ -237,21 +237,34 @@ export default function StudentLoginPage() {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              <Card className="bg-white shadow-sm">
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">New to AuthorConnect?</h3>
-                  <div className="space-y-3">
-                    <Link href="/auth/user/register" className="block text-blue-600 hover:underline">
-                      Register as a User
-                    </Link>
-                    <Link href="/auth/author/register" className="block text-blue-600 hover:underline">
-                      Apply to become an Author
-                    </Link>
-                  
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+  <Card className="bg-white shadow-sm">
+    <CardContent className="p-6 text-center">  {/* <-- added text-center */}
+      <h3 className="text-lg font-medium text-gray-900 mb-4">
+        New to AuthorConnect?
+      </h3>
+
+      <div className="space-y-3 flex flex-col items-center justify-center"> 
+        {/* <-- added flex + items-center (center horizontally) */}
+        
+        <Link
+          href="/auth/user/register"
+          className="text-blue-600 hover:underline"
+        >
+          Register as a User
+        </Link>
+
+        <Link
+          href="/auth/author/register"
+          className="text-blue-600 hover:underline"
+        >
+          Apply to become an Author
+        </Link>
+      </div>
+
+    </CardContent>
+  </Card>
+</div>
+
           </div>
         </div>
       </div>

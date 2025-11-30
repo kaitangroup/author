@@ -391,12 +391,13 @@ export default function TutorApplicationPage() {
             <h2 className="text-2xl font-bold mb-4">Personal Information</h2>
             {/* Profile Photo */}
             <Card>
-              <CardHeader>
+              <CardHeader className="text-center">
                 <CardTitle>Profile Photo</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-6">
-                 <Avatar className="h-24 w-24 rounded-full overflow-hidden ring-2 ring-white">
+                <div className="flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6">
+                  {/* Avatar */}
+                  <Avatar className="h-24 w-24 rounded-full overflow-hidden ring-2 ring-white shrink-0">
                     <AvatarImage
                       src={profileData?.avatar || ''}
                       alt="Profile"
@@ -407,7 +408,8 @@ export default function TutorApplicationPage() {
                     </AvatarFallback>
                   </Avatar>
 
-                  <div>
+                  {/* Upload controls */}
+                  <div className="text-center sm:text-left">
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -424,13 +426,14 @@ export default function TutorApplicationPage() {
                       <Camera className="h-4 w-4 mr-2" />
                       {uploadingAvatar ? 'Uploading...' : 'Change Photo'}
                     </Button>
-                    <p className="text-sm text-gray-500 mt-2">
+                    <p className="text-sm text-gray-500 mt-2 max-w-xs">
                       Upload a professional photo. JPG, PNG, GIF or WEBP. Max size 5MB.
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
             
             <div className="grid md:grid-cols-2 gap-4">
               <div>
