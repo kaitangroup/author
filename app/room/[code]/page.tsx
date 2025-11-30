@@ -38,7 +38,8 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   // Env
   const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "";
-  const WP_ENDPOINT = process.env.NEXT_PUBLIC_WP_ENDPOINT || "";
+  const WP_CUSTOM_API  = process.env.NEXT_PUBLIC_WP_CUSTOM_API || "";
+  const WP_ENDPOINT = WP_CUSTOM_API ? `${WP_CUSTOM_API}/meeting-end` : "";
   const WP_TOKEN = process.env.NEXT_PUBLIC_WP_TOKEN || "";
   const WP_BOOKLY_VALIDATE = process.env.NEXT_PUBLIC_WP_BOOKLY_VALIDATE || "";
 
@@ -485,19 +486,22 @@ console.log("Socket effect running with:", { displayName, validationStatus });
   async function postToWordPress(outcome: "timeout" | "left") {
     if (!WP_ENDPOINT || endPostedRef.current) return;
     endPostedRef.current = true;
-
+  
     const endTs = Date.now();
     const startedTs = startedAt ?? endTs;
-
+  
     const payload = {
       room: code,
+      appointment_id: appointmentId,     // 🔹 add this
+      token: appointmentToken,           // 🔹 and this
+  
       startedAt: new Date(startedTs).toISOString(),
       endedAt: new Date(endTs).toISOString(),
       outcome, // "timeout" | "left"
       durationSec: Math.max(0, Math.floor((endTs - startedTs) / 1000)),
       participants: participants.map((p) => ({ id: p.id, name: p.name ?? "Guest" })),
     };
-
+  
     try {
       await fetch(WP_ENDPOINT, {
         method: "POST",
@@ -511,6 +515,7 @@ console.log("Socket effect running with:", { displayName, validationStatus });
       console.error("WP post failed:", e);
     }
   }
+  
 
   async function endMeeting(outcome: "timeout" | "left") {
     await postToWordPress(outcome);
