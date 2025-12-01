@@ -73,6 +73,7 @@ export interface StudentDashboard {
     student_name: string;
     date: string;
     amount: number;
+    duration: number;
     status: string;
   }
   totalStudents: number;
@@ -94,6 +95,7 @@ export interface AuthorDashboard {
     book_title: string;
     student_name: string;
     date: string;
+    duration: number;
     amount: number;
     status: string;
   }

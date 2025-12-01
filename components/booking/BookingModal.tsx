@@ -149,31 +149,59 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
     }));
   };
 
-  const generateTimeSlots2 = (date: Date, isWeekend: boolean = false): TimeSlot[] => {
+  const generateTimeSlots2 = (date: Date): TimeSlot[] => {
     const baseSlots = [
-      '7:00 am',
-      '8:00 am',
-      '9:00 am',
-      '10:00 am',
-      '11:00 am',
-      '12:00 pm',
-      '1:00 pm',
-      '2:00 pm',
-      '3:00 pm',
-      '4:00 pm',
-      '5:00 pm',
-      '6:00 pm',
+      "7:00 am", "8:00 am", "9:00 am", "10:00 am", "11:00 am",
+      "12:00 pm", "1:00 pm", "2:00 pm", "3:00 pm", "4:00 pm",
+      "5:00 pm", "6:00 pm"
     ];
-    const todayName = date
-      .toLocaleDateString('en-US', { weekday: 'long' })
-      .toLowerCase(); // e.g. "monday"
-    const exists = tutor?.availability?.some((slot) => slot.toLowerCase().startsWith(todayName));
-
-    return baseSlots.map((time) => ({
-      time,
-      available: exists ? true : false,
-    }));
+  
+    const weekday = date
+      .toLocaleDateString("en-US", { weekday: "long" })
+      .toLowerCase();
+  
+    // Find availability for this weekday ONLY
+    const dayAvailability = tutor?.availability?.filter((a) =>
+      a.toLowerCase().startsWith(weekday)
+    ) ?? [];
+  
+    // Parse availability → blocks
+    const blocks: Record<string, string[]> = {
+      morning: ["7:00 am", "8:00 am", "9:00 am", "10:00 am", "11:00 am", "12:00 pm"],
+      afternoon: ["1:00 pm", "2:00 pm", "3:00 pm", "4:00 pm", "5:00 pm"],
+      evening: ["6:00 pm"] // optional, you can expand
+    };
+  
+    let allowedSlots: string[] = [];
+  
+    dayAvailability.forEach((item) => {
+      const lower = item.toLowerCase();
+      if (lower.includes("morning")) allowedSlots = allowedSlots.concat(blocks.morning);
+      if (lower.includes("afternoon")) allowedSlots = allowedSlots.concat(blocks.afternoon);
+      if (lower.includes("evening")) allowedSlots = allowedSlots.concat(blocks.evening);
+    });
+  
+    const now = new Date();
+  
+    return baseSlots.map((time) => {
+      const parsed = parseTwelveHour(time);
+      if (!parsed) return { time, available: false };
+  
+      const slotDate = new Date(date);
+      slotDate.setHours(parsed.h, parsed.min, 0, 0);
+  
+      const isInPast = slotDate.getTime() < now.getTime();
+      const tutorAllows = allowedSlots.includes(time);
+  
+      return {
+        time,
+        available: tutorAllows && !isInPast, // always boolean
+      };
+    });
   };
+  
+  
+  
 
   // Generate days for day view (3-day window)
   const generateDaysData = (): DayData[] => {
@@ -209,7 +237,7 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
         fullDate: new Date(currentDate), // store actual Date object
         dayName: dayNames[currentDate.getDay()],
         dayNumber: currentDate.getDate(),
-        timeSlots: generateTimeSlots2(currentDate, isWeekend),
+        timeSlots: generateTimeSlots2(currentDate),
       });
     }
 
@@ -223,6 +251,7 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
     const firstDay = new Date(year, month, 1);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
 
     const days: Array<{
       date: Date;
@@ -556,7 +585,7 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
                                 <p className="text-sm text-gray-600">{day.dayName}</p>
                               </div>
                               <div className="space-y-2">
-                                {day.timeSlots.slice(0, 6).map((slot, slotIndex) => {
+                                {day.timeSlots.slice(0, 12).map((slot, slotIndex) => {
                                   const keyForSlot = `${day.fullDate.getTime()}|${slot.time}`;
                                   return (
                                     <button
@@ -578,7 +607,7 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
                                     </button>
                                   );
                                 })}
-                                {day.timeSlots.slice(6).some((slot) => !slot.available) && (
+                                {day.timeSlots.slice(12).some((slot) => !slot.available) && (
                                   <div className="text-xs text-gray-400 text-center pt-2">
                                     More times available
                                   </div>
@@ -605,24 +634,33 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
                               ))}
                             </div>
                             <div className="grid grid-cols-7 gap-1">
-                              {calendarDays.map((day, index) => (
-                                <button
-                                  key={index}
-                                  onClick={() => day.isCurrentMonth && selectDate(day.date)}
-                                  disabled={!day.isCurrentMonth}
-                                  className={`aspect-square p-2 text-sm rounded-lg transition-all duration-200 ${
-                                    !day.isCurrentMonth || !day.isExist
-                                      ? 'text-gray-300 cursor-not-allowed'
-                                      : day.isSelected
-                                      ? 'bg-blue-500 text-white font-semibold shadow-md'
-                                      : day.isToday
-                                      ? 'bg-blue-100 text-blue-600 font-semibold'
-                                      : 'text-gray-700 hover:bg-gray-100'
-                                  }`}
-                                >
-                                  {day.date.getDate()}
-                                </button>
-                              ))}
+                            {calendarDays.map((day, index) => {
+  const isPastDate =
+    normalizeDate(day.date).getTime() <
+    normalizeDate(new Date()).getTime();
+
+  return (
+    <button
+      key={index}
+      onClick={() =>
+        !isPastDate && day.isCurrentMonth && selectDate(day.date)
+      }
+      disabled={!day.isCurrentMonth || isPastDate}
+      className={`aspect-square p-2 text-sm rounded-lg transition-all duration-200 ${
+        !day.isCurrentMonth || isPastDate || !day.isExist
+          ? 'text-gray-300 cursor-not-allowed'
+          : day.isSelected
+          ? 'bg-blue-500 text-white font-semibold shadow-md'
+          : day.isToday
+          ? 'bg-blue-100 text-blue-600 font-semibold'
+          : 'text-gray-700 hover:bg-gray-100'
+      }`}
+    >
+      {day.date.getDate()}
+    </button>
+  );
+})}
+
                             </div>
                           </div>
 
