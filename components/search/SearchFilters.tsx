@@ -308,7 +308,7 @@ export function SearchFilters({ filters, onFiltersChange }: SearchFiltersProps) 
         </div>
 
         {/* Tutor Age Range */}
-        <div>
+        {/* <div>
           <Label className="text-sm tracking-wider font-bold mb-3 block">
             Tutor age:{' '}
             {((filters as any).ageRange ?? [18, 80])[1] >= 80
@@ -324,7 +324,7 @@ export function SearchFilters({ filters, onFiltersChange }: SearchFiltersProps) 
             step={1}
             className=""
           />
-        </div>
+        </div> */}
       </CardContent>
     </Card>
   );
