@@ -58,6 +58,26 @@ export default function TutorDashboard() {
     ? authorDashboard.bookings.filter((booking: any) => booking?.status === 'completed')
     : [];
 
+    const toLocalDateTime = (startIso?: string) => {
+      if (!startIso) return { date: 'N/A', time: 'N/A' }; // fallback
+    
+      const d = new Date(startIso); // browser converts from site offset → user local time
+    
+      const date = d.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    
+      const time = d.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    
+      return { date, time };
+    };
+    
+
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -231,16 +251,24 @@ export default function TutorDashboard() {
                 <CardContent>
                   {upcomingBookings.length > 0 ? (
                     <div className="space-y-4">
-                      {upcomingBookings.map((booking) => (
-  <div key={booking?.appointment_id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-    <Avatar>
-      <AvatarImage src={booking.avatar} />
-      <AvatarFallback>{booking.name}</AvatarFallback>
-    </Avatar>
-    <div className="flex-1">
-      <h4 className="font-medium">{booking.subject} with {booking.name}</h4>
-      <p className="text-sm text-gray-600">{booking.date} at {booking.time}</p>
-      <div className="flex items-center gap-2 mt-1">
+
+{upcomingBookings.map((booking) => {
+  const { date, time } = toLocalDateTime(booking.start_iso);
+
+  return (
+    <div key={booking?.appointment_id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+      <Avatar>
+        <AvatarImage src={booking.avatar} />
+        <AvatarFallback>{booking.name}</AvatarFallback>
+      </Avatar>
+      <div className="flex-1">
+        <h4 className="font-medium">
+          {booking.subject} with {booking.name}
+        </h4>
+        <p className="text-sm text-gray-600">
+          {date} at {time}
+        </p>
+        <div className="flex items-center gap-2 mt-1">
         <Clock className="h-3 w-3 text-gray-400" />
         <span className="text-xs text-gray-500">{booking.duration} minutes</span>
       </div>
@@ -258,7 +286,10 @@ export default function TutorDashboard() {
       <p className="text-sm font-medium mt-1">${booking.price}</p>
     </div>
   </div>
-))}
+  );
+})}
+
+                     
 
                     </div>
                   ) : (
