@@ -355,14 +355,7 @@ export default function BookingsPage() {
                       onClick={() => onRateLesson && onRateLesson(booking)}
                       disabled={booking.rated}
                     >
-                      <Star
-    className={
-      'h-4 w-4 mr-2 ' +
-      (booking.rated
-        ? 'fill-yellow-400 text-yellow-400'
-        : 'text-gray-500')
-    }
-  />
+                      <Star className="h-4 w-4 mr-2" />
                       {booking.rated ? 'Rated' : 'Rate Lesson'}
                     </Button>
                     <Button
