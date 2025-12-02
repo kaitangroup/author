@@ -93,6 +93,7 @@ export interface AuthorDashboard {
   bookings: {
     appointment_id: number;
     book_title: string;
+    author_id: string;
     student_name: string;
     date: string;
     duration: number;

@@ -48,7 +48,7 @@ export default function TutorDashboard() {
   const totalEarnings = authorDashboard ? authorDashboard.totalEarnings  : 0; // Mock data
   const monthlyEarnings = authorDashboard ? authorDashboard.totalEarnings : 0; // Mock data
   const totalStudents = authorDashboard ? authorDashboard.totalStudents : 0; // Mock data
-  const averageRating = 4.8; // Mock data
+  const averageRating = 0.0; // Mock data
 
   const upcomingBookings = authorDashboard && Array.isArray(authorDashboard.bookings)
     ? authorDashboard.bookings.filter((booking: any) => booking?.status === 'approved')

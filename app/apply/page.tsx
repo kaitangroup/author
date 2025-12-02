@@ -44,6 +44,7 @@ interface ProfileData {
   agreeToBackground?: boolean;
   instantBook?: boolean;
   AvailableInPerson?: boolean;
+  timezone: string;
 }
 
 export default function TutorApplicationPage() {
@@ -53,39 +54,52 @@ export default function TutorApplicationPage() {
   const [loading, setLoading] = useState(true);
   const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const browserTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+  const normalizeToString = (value: any): string => {
+    if (Array.isArray(value)) {
+      return value[0] ?? '';   // use first item if it's an array
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    return '';
+  };
+  
     // 🔹 avatar upload helpers
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  const [profileData, setProfileData] = useState<ProfileData>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    bio: '',
-    location: '',
-    degree: '',
-    hourlyRate: '',
-    subjects: [],
-    education: '',
-    experience: '',
-    languages: [],
-    avatar: '',
-    availability: [],
-    teachingExperience: '',
-    agreeToTerms: false,
-    teachingStyle: '',
-    dateOfBirth: '',
-    university: '',
-    graduationYear: '',
-    tutoringExperience: '',
-    whyTutor: '',
-    references: '',
-    agreeToBackground: false,
-    instantBook: false,
-    AvailableInPerson: false,
-  });
+    const [profileData, setProfileData] = useState<ProfileData>({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      bio: '',
+      location: '',
+      degree: '',
+      hourlyRate: '',
+      subjects: [],
+      education: '',
+      experience: '',
+      languages: [],
+      avatar: '',
+      availability: [],
+      teachingExperience: '',
+      agreeToTerms: false,
+      teachingStyle: '',
+      dateOfBirth: '',
+      university: '',
+      graduationYear: '',
+      tutoringExperience: '',
+      whyTutor: '',
+      references: '',
+      agreeToBackground: false,
+      instantBook: false,
+      AvailableInPerson: false,
+      timezone: browserTZ,   // ✅ always a string
+    });
+    
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -100,6 +114,17 @@ export default function TutorApplicationPage() {
 
         if (!res.ok) throw new Error('Failed to fetch profile');
         const data = await res.json();
+
+              // ✅ Validate timezone from API
+      const supportedTimezones = Intl.supportedValuesOf('timeZone');
+      const apiTimezone = data.timezone;
+      const safeTimezone =
+        apiTimezone && supportedTimezones.includes(apiTimezone)
+          ? apiTimezone
+          : browserTZ;
+          console.log('Browser timezone:', browserTZ);
+
+          console.log('Fetched timezone:', data.timezone, 'Using timezone:', safeTimezone);
         setProfileData(prev => ({
           ...prev,
           firstName: data.first_name || '',
@@ -112,8 +137,8 @@ export default function TutorApplicationPage() {
           hourlyRate: data.hourly_rate || '',
           subjects: data.subjects || [],
           dateOfBirth: data.date_of_birth || '',
-          education: data.education || '',
-          teachingExperience: data.teaching_experience || '',
+          education: normalizeToString(data.education),
+          teachingExperience: normalizeToString(data.teaching_experience),
           experience: data.experience || '',
           languages: data.languages || [],
           teachingStyle: data.teaching_style || '',
@@ -125,12 +150,16 @@ export default function TutorApplicationPage() {
           agreeToTerms: data.agree_to_terms || false,
           university: data.university || '',
           graduationYear: data.graduation_year || '',
-          tutoringExperience: data.tutoring_experience || '',
+          tutoringExperience: normalizeToString(data.tutoring_experience),
           whyTutor: data.why_tutor || '',
           references: data.references || '',
           instantBook: data.instant_book || false,
           AvailableInPerson: data.available_in_person || false,
+          timezone: safeTimezone,       // ✅ final value
         }));
+        
+
+      
       } catch (err) {
         console.error(err);
       } finally {
@@ -140,6 +169,9 @@ export default function TutorApplicationPage() {
 
     fetchProfile();
   }, []);
+
+
+  
 
   const [newSubject, setNewSubject] = useState('');
 
@@ -706,6 +738,22 @@ export default function TutorApplicationPage() {
                 ))}
               </div>
             </div>
+
+            <div>
+  <Label className="text-base font-medium mb-2 block">Timezone</Label>
+
+  <input
+  type="hidden"
+  name="timezone"
+  value={profileData.timezone || browserTZ}
+/>
+
+<p className="text-xs text-gray-500 mt-1">
+  Detected timezone: {profileData.timezone || browserTZ}
+</p>
+
+</div>
+
           </div>
         );
 
