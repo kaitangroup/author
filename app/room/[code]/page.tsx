@@ -149,40 +149,36 @@ useEffect(() => {
   // ==========================================================
   useEffect(() => {
     async function validateAppointment() {
-      // Basic presence checks
-
       console.log("Validating appointment:", { appointmentId, appointmentToken, code });
+  
       if (!appointmentId || !appointmentToken) {
         setValidationStatus("failed");
         setValidationError("Missing appointment information in the link.");
         return;
       }
-
+  
       if (!WP_BOOKLY_VALIDATE) {
         setValidationStatus("failed");
         setValidationError("Validation endpoint is not configured.");
         return;
       }
-
+  
       setValidationStatus("checking");
       setValidationError(null);
-
+  
       try {
         const res = await fetch(WP_BOOKLY_VALIDATE, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             appointment_id: appointmentId,
             token: appointmentToken,
             room: code,
           }),
         });
-
+  
         const json = await res.json().catch(() => null);
-
-         // Expect your WP REST API to return { valid: true/false, message?: string }
+  
         if (!res.ok || !json?.valid) {
           setValidationStatus("failed");
           setValidationError(
@@ -190,8 +186,47 @@ useEffect(() => {
           );
           return;
         }
-
-        // If backend has already verified Bookly startdate + customer token → we’re good
+  
+        // ----- ⏱ Client-side time validation (browser timezone) -----
+        const startIso = json.start_iso as string | undefined;
+        const endIso   = json.end_iso as string | undefined;
+  
+        if (!startIso || !endIso) {
+          setValidationStatus("failed");
+          setValidationError("Missing appointment time information.");
+          return;
+        }
+  
+        const start = new Date(startIso); // same instant, displayed in local tz
+        const end   = new Date(endIso);
+        const now   = new Date();
+  
+        const nowMs         = now.getTime();
+        const startMs       = start.getTime();
+        const endMs         = end.getTime();
+        const fiveMinBefore = startMs - 5 * 60 * 1000;
+  
+        // Too early: more than 5min before start
+        if (nowMs < fiveMinBefore) {
+          setValidationStatus("failed");
+          setValidationError(
+            `Meeting will open 5 minutes before your appointment time. 
+            Your time: ${start.toLocaleString()}`
+          );
+          return;
+        }
+  
+        // Too late: after meeting end
+        if (nowMs > endMs) {
+          setValidationStatus("failed");
+          setValidationError(
+            `Your meeting slot has already ended. 
+            Your time: ${end.toLocaleString()}`
+          );
+          return;
+        }
+  
+        // ✅ All good → allow join
         setValidationStatus("ok");
       } catch (err) {
         console.error("Appointment validation failed:", err);
@@ -199,9 +234,10 @@ useEffect(() => {
         setValidationError("Could not verify your appointment. Please try again.");
       }
     }
-
+  
     validateAppointment();
   }, [WP_BOOKLY_VALIDATE, appointmentId, appointmentToken, code]);
+  
 
 
   /* ==========================================================

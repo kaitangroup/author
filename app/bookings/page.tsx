@@ -333,7 +333,7 @@ export default function BookingsPage() {
                       className="w-full sm:w-auto"
                     >
                       <MessageCircle className="h-4 w-4 mr-2" />
-                      Message Tutor
+                      Message Author
                     </Button>
                     <Button
                       size="sm"
@@ -355,7 +355,14 @@ export default function BookingsPage() {
                       onClick={() => onRateLesson && onRateLesson(booking)}
                       disabled={booking.rated}
                     >
-                      <Star className="h-4 w-4 mr-2" />
+                      <Star
+    className={
+      'h-4 w-4 mr-2 ' +
+      (booking.rated
+        ? 'fill-yellow-400 text-yellow-400'
+        : 'text-gray-500')
+    }
+  />
                       {booking.rated ? 'Rated' : 'Rate Lesson'}
                     </Button>
                     <Button
@@ -384,7 +391,7 @@ export default function BookingsPage() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">My Bookings</h1>
             <p className="text-gray-600">
-              Manage your tutoring sessions and appointments.
+              Manage your authoring sessions and appointments.
             </p>
           </div>
 

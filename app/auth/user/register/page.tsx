@@ -170,17 +170,7 @@ export default function StudentRegisterPage() {
                         />
                       </div>
                     </div>
-                <div>
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    type="text"
-                    value={formData.username}
-                    onChange={(e) => handleInputChange("username", e.target.value)}
-                    className="mt-1 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    required
-                  />
-                </div>
+                
 
                 <div>
                   <Label htmlFor="email">Email</Label>
