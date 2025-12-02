@@ -119,18 +119,16 @@ export default function BookingsPage() {
 
 
 
-
-  const handleCancelBooking = (bookingId: string | number) => {
-    toast.success('Booking cancelled successfully (frontend only placeholder)');
-  };
-
-
-
-
-
   const handleReschedule = (bookingId: string | number) => {
     toast.info('Reschedule functionality would open here');
   };
+
+
+
+
+
+
+
 
   // ⭐ Rate Lesson button e click hole
   const openRatingModal = (booking: any) => {
@@ -306,22 +304,7 @@ export default function BookingsPage() {
                       <MessageCircle className="h-4 w-4 mr-2" />
                       Message
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full sm:w-auto"
-                      onClick={() => handleReschedule(booking.appointment_id)}
-                    >
-                      Reschedule
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full sm:w-auto"
-                      onClick={() => handleCancelBooking(booking.appointment_id)}
-                    >
-                      Cancel
-                    </Button>
+
                   </>
                 )}
 
@@ -358,13 +341,15 @@ export default function BookingsPage() {
                       <Star className="h-4 w-4 mr-2" />
                       {booking.rated ? 'Rated' : 'Rate Lesson'}
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full sm:w-auto"
-                    >
-                      Book Again
-                    </Button>
+                    <Link href={`/tutors/${booking.tutor_id}`}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full sm:w-auto"
+                      >
+                        Book Again
+                      </Button>
+                    </Link>
                   </>
                 )}
               </div>
