@@ -271,7 +271,7 @@ export default function StudentDashboard() {
                       <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                       <p className="text-gray-500 mb-4">No upcoming Meetings</p>
                       <Link href="/search">
-                        <Button>Find a Tutor</Button>
+                        <Button>Find a Author</Button>
                       </Link>
                     </div>
                   )}
@@ -316,7 +316,7 @@ export default function StudentDashboard() {
                   <Link href="/search">
                     <Button variant="outline" className="w-full justify-start">
                       <Search className="h-4 w-4 mr-3" />
-                      Find New Tutor
+                      Find New Author
                     </Button>
                   </Link>
                   <Link href="/messages">

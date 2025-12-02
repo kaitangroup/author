@@ -18,14 +18,14 @@ export default function TermsPage() {
                 <section>
                   <h2 className="text-2xl font-bold mb-4">1. Acceptance of Terms</h2>
                   <p className="text-gray-600 mb-4">
-                    By accessing and using TutorConnect, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
+                    By accessing and using AuthorConnect, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
                   </p>
                 </section>
 
                 <section>
                   <h2 className="text-2xl font-bold mb-4">2. Description of Service</h2>
                   <p className="text-gray-600 mb-4">
-                    TutorConnect is an online platform that connects students with qualified tutors for educational services. We facilitate the booking, scheduling, and payment for tutoring sessions but do not directly provide educational services.
+                    AuthorConnect is an online platform that connects students with qualified authors for educational services. We facilitate the booking, scheduling, and payment for authoring sessions but do not directly provide educational services.
                   </p>
                 </section>
 
@@ -58,9 +58,9 @@ export default function TermsPage() {
                 </section>
 
                 <section>
-                  <h2 className="text-2xl font-bold mb-4">5. Tutor Responsibilities</h2>
+                  <h2 className="text-2xl font-bold mb-4">5. Author Responsibilities</h2>
                   <p className="text-gray-600 mb-4">
-                    Tutors using our platform agree to:
+                    Authors using our platform agree to:
                   </p>
                   <ul className="list-disc pl-6 text-gray-600 space-y-2">
                     <li>Provide accurate qualifications and experience</li>
@@ -79,7 +79,7 @@ export default function TermsPage() {
                   <ul className="list-disc pl-6 text-gray-600 space-y-2">
                     <li>Attend scheduled sessions or cancel with appropriate notice</li>
                     <li>Make payments promptly as required</li>
-                    <li>Treat tutors with respect and professionalism</li>
+                    <li>Treat Authors with respect and professionalism</li>
                     <li>Provide honest feedback and reviews</li>
                   </ul>
                 </section>
@@ -91,7 +91,7 @@ export default function TermsPage() {
                   </p>
                   <ul className="list-disc pl-6 text-gray-600 space-y-2">
                     <li>Students pay for lessons through our secure platform</li>
-                    <li>Platform fees are deducted from tutor payments</li>
+                    <li>Platform fees are deducted from author payments</li>
                     <li>Cancellation fees may apply per our cancellation policy</li>
                     <li>Refunds are provided according to our refund policy</li>
                     <li>All fees and rates are clearly disclosed</li>
@@ -106,7 +106,7 @@ export default function TermsPage() {
                   <ul className="list-disc pl-6 text-gray-600 space-y-2">
                     <li>Free cancellation up to 24 hours before scheduled lessons</li>
                     <li>Cancellations within 24 hours may incur fees</li>
-                    <li>Refunds for tutor no-shows or technical issues</li>
+                    <li>Refunds for author no-shows or technical issues</li>
                     <li>Dispute resolution process for unsatisfactory lessons</li>
                   </ul>
                 </section>
@@ -114,7 +114,7 @@ export default function TermsPage() {
                 <section>
                   <h2 className="text-2xl font-bold mb-4">9. Intellectual Property</h2>
                   <p className="text-gray-600 mb-4">
-                    The platform, including all content, features, and functionality, is owned by TutorConnect and protected by intellectual property laws. Users retain rights to their own content but grant us license to use it as necessary to provide our services.
+                    The platform, including all content, features, and functionality, is owned by AuthorConnect and protected by intellectual property laws. Users retain rights to their own content but grant us license to use it as necessary to provide our services.
                   </p>
                 </section>
 
@@ -128,7 +128,7 @@ export default function TermsPage() {
                 <section>
                   <h2 className="text-2xl font-bold mb-4">11. Disclaimers and Limitations</h2>
                   <p className="text-gray-600 mb-4">
-                    TutorConnect provides the platform "as is" without warranties. We are not responsible for the quality of tutoring services, though we strive to maintain high standards through our review process.
+                    AuthorConnect provides the platform "as is" without warranties. We are not responsible for the quality of authoring services, though we strive to maintain high standards through our review process.
                   </p>
                 </section>
 
@@ -153,7 +153,7 @@ export default function TermsPage() {
                   </p>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <p className="text-gray-600">
-                      Email: legal@tutorconnect.com<br />
+                      Email: legal@authorconnect.com<br />
                       Address: 123 Education Ave, New York, NY 10001<br />
                       Phone: +1 (555) 123-4567
                     </p>

@@ -50,7 +50,7 @@ export default function PrivacyPage() {
                     We do not sell, trade, or otherwise transfer your personal information to third parties except in the following circumstances:
                   </p>
                   <ul className="list-disc pl-6 text-gray-600 space-y-2">
-                    <li>With tutors and students to facilitate lessons</li>
+                    <li>With authors and students to facilitate lessons</li>
                     <li>With payment processors to handle transactions</li>
                     <li>With service providers who assist in operating our platform</li>
                     <li>When required by law or to protect our rights</li>
@@ -114,7 +114,7 @@ export default function PrivacyPage() {
                   </p>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <p className="text-gray-600">
-                      Email: privacy@tutorconnect.com<br />
+                      Email: privacy@authorconnect.com<br />
                       Address: 123 Education Ave, New York, NY 10001<br />
                       Phone: +1 (555) 123-4567
                     </p>

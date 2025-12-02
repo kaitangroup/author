@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
-export default function TutorLoginPage() {
+export default function AuthorLoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     username: '',
@@ -201,7 +201,7 @@ export default function TutorLoginPage() {
               {/* New to TutorConnect */}
               <Card className="bg-white shadow-sm">
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">New to TutorConnect?</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">New to AuthorConnect?</h3>
                   <div className="space-y-3">
                     <Link 
                       href="/auth/user/register"
@@ -213,7 +213,7 @@ export default function TutorLoginPage() {
                       href="/auth/author/register"
                       className="block text-blue-600 hover:underline"
                     >
-                      Apply to become a tutor
+                      Apply to become a Author
                     </Link>
                     <Link 
                       href="/about"
@@ -231,10 +231,10 @@ export default function TutorLoginPage() {
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Your username</h3>
                   <div className="space-y-4 text-sm text-gray-600">
                     <div>
-                      <span className="font-medium text-gray-900">Students</span> - Your username is the email address you entered to contact tutors.
+                      <span className="font-medium text-gray-900">Students</span> - Your username is the email address you entered to contact Authors.
                     </div>
                     <div>
-                      <span className="font-medium text-gray-900">Tutors</span> - Your username was sent to you when you first registered. The format is usually FirstName.LastName and you can also sign in with your TutorConnect email.
+                      <span className="font-medium text-gray-900">Authors</span> - Your username was sent to you when you first registered. The format is usually FirstName.LastName and you can also sign in with your AuthorConnect email.
                     </div>
                     <div>
                       <span className="font-medium text-gray-900">Partners</span> - Your username is the email address you entered when you applied for the partner program.

@@ -151,8 +151,8 @@ export default function TutorRegisterPage() {
               {/* Signup Card */}
               <Card className="bg-white shadow-sm  mx-auto lg:mx-0">
                 <CardHeader className="text-center">
-                  <CardTitle className="text-2xl font-bold text-gray-900">Welcome to TutorConnect!</CardTitle>
-                  <p className="text-gray-600">Apply to become a tutor and start earning.</p>
+                  <CardTitle className="text-2xl font-bold text-gray-900">Welcome to AuthorConnect!</CardTitle>
+                  <p className="text-gray-600">Apply to become a author and start earning.</p>
                   <p className="text-sm text-gray-500 mt-2">
                     Already have an account?{' '}
                     <Link href="/auth/author/login" className="text-blue-600 hover:underline">
@@ -163,7 +163,7 @@ export default function TutorRegisterPage() {
                 
                 <CardContent className="space-y-4">
                   <p className="text-xs text-gray-500 text-center">
-                    By signing up, I agree to TutorConnect's{' '}
+                    By signing up, I agree to AuthorConnect's{' '}
                     <Link href="/terms" className="text-blue-600 hover:underline">terms of use</Link>
                     {' '}and{' '}
                     <Link href="/privacy" className="text-blue-600 hover:underline">privacy policy</Link>.
@@ -269,7 +269,7 @@ export default function TutorRegisterPage() {
                         required
                       />
                       <Label htmlFor="agreeToTerms" className="text-sm">
-                        I agree to TutorConnect's{' '}
+                        I agree to AuthorConnect's{' '}
                         <Link href="/terms" className="text-blue-600 hover:underline">terms of use</Link>
                         {' '}and{' '}
                         <Link href="/privacy" className="text-blue-600 hover:underline">privacy policy</Link>. *
@@ -280,13 +280,13 @@ export default function TutorRegisterPage() {
                       type="submit" 
                       className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-md"
                     >
-                      Apply to Become a Tutor
+                      Apply to Become a Author
                     </Button>
                   </form>
 
                   <div className="text-center mt-4">
                     <p className="text-sm text-gray-600">
-                      Looking for a tutor?{' '}
+                      Looking for a Author?{' '}
                       <Link href="/auth/user/register" className="text-blue-600 hover:underline">
                         Sign up as a student.
                       </Link>
@@ -308,13 +308,13 @@ export default function TutorRegisterPage() {
                       <div>
                         <div className="flex items-center gap-1 mb-2">
                           <span className="text-green-600 font-medium">💬</span>
-                          <span className="text-green-600 font-medium">Great platform for tutors!</span>
+                          <span className="text-green-600 font-medium">Great platform for Authors!</span>
                         </div>
                         <p className="text-gray-600 text-sm mb-2">
-                          I've been tutoring on TutorConnect for 2 years and love the flexibility. 
+                          I've been Authoring on AuthorConnect for 2 years and love the flexibility. 
                           The platform makes it easy to connect with students and manage my schedule.
                         </p>
-                        <p className="text-gray-400 text-xs">– Sarah, Mathematics Tutor</p>
+                        <p className="text-gray-400 text-xs">– Sarah, Mathematics Author</p>
                       </div>
                     </div>
                   </CardContent>
@@ -358,7 +358,7 @@ export default function TutorRegisterPage() {
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2">Earn $20-$80+ Per Hour</h3>
                     <p className="text-gray-600 text-sm">
-                      Set your own rates and keep 85% of what you earn. Top tutors on our platform 
+                      Set your own rates and keep 85% of what you earn. Top Authors on our platform 
                       earn over $1,000 per week.
                     </p>
                   </div>
@@ -385,7 +385,7 @@ export default function TutorRegisterPage() {
                     <h3 className="font-semibold text-gray-900 mb-2">No Experience Required</h3>
                     <p className="text-gray-600 text-sm">
                       Whether you're a certified teacher or subject matter expert, we welcome 
-                      tutors of all backgrounds and experience levels.
+                      Authors of all backgrounds and experience levels.
                     </p>
                   </div>
                 </div>

@@ -192,7 +192,7 @@ export function SearchFilters({ filters, onFiltersChange }: SearchFiltersProps) 
                     <HelpCircle className="h-4 w-4 opacity-70 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    Tutor can meet at a physical location instead of online only.
+                    Author can meet at a physical location instead of online only.
                   </TooltipContent>
                 </Tooltip>
               </Label>
@@ -217,7 +217,7 @@ export function SearchFilters({ filters, onFiltersChange }: SearchFiltersProps) 
                       <HelpCircle className="h-4 w-4 opacity-70 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      Verification that the tutor has a background check on record.
+                      Verification that the author has a background check on record.
                     </TooltipContent>
                   </Tooltip>
                 </Label>

@@ -82,7 +82,7 @@ export function BlogList() {
             Latest Blog Posts
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Discover insights, tutorials, and stories from our blog
+            Discover insights, authorials, and stories from our blog
           </p>
         </div>
 

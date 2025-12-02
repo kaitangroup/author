@@ -262,9 +262,7 @@ export default function TutorApplicationPage() {
         if (!profileData.bio) newErrors.bio = "Bio is required";
         if (!profileData.agreeToBackground) newErrors.agreeToBackground = "You must agree to background check";
         if (!profileData.agreeToTerms) newErrors.agreeToTerms = "You must agree to Terms of Service";
-        if (!profileData.instantBook) newErrors.instantBook = "You must agree to Terms of Service";
-        if (!profileData.AvailableInPerson) newErrors.AvailableInPerson = "You must agree to Terms of Service";
-        break;
+         break;
     }
 
     setErrors(newErrors);
@@ -842,6 +840,8 @@ export default function TutorApplicationPage() {
                 <Label htmlFor="agreeToBackground" className="text-sm">
                   I agree to undergo a background check as part of the verification process. *
                 </Label>
+
+                {errors.agreeToBackground && <p className="text-red-500 text-sm">{errors.agreeToBackground}</p>}
               </div>
 
               <div className="flex items-start space-x-3">

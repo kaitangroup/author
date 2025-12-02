@@ -422,7 +422,7 @@ useEffect(() => {
         <div className="max-w-7xl mx-auto">
           <div className="mb-4 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold mb-1">Messages</h1>
-            <p className="text-gray-600 text-sm sm:text-base">Communicate with your tutors and students.</p>
+            <p className="text-gray-600 text-sm sm:text-base">Communicate with your authors and students.</p>
           </div>
 
           {/* 📱 Mobile-first: list OR chat; 🖥️ Desktop: split view */}

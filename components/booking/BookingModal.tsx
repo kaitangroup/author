@@ -495,7 +495,7 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
                 <Label htmlFor="message">Message (optional)</Label>
                 <Textarea
                   id="message"
-                  placeholder="Tell the tutor what you'd like to focus on..."
+                  placeholder="Tell the author what you'd like to focus on..."
                   value={formData.message}
                   onChange={(e) => handleInputChange('message', e.target.value)}
                   rows={3}
@@ -707,7 +707,7 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
                       <div className="text-center">
                         <div className="flex items-center justify-center gap-2 mb-6 text-sm text-gray-600">
                           <span>
-                            Additional tutors may contact you if they are able to help.
+                            Additional authors may contact you if they are able to help.
                           </span>
                           <Info size={16} className="text-gray-400" />
                         </div>

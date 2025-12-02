@@ -21,10 +21,10 @@ export default function RequestTutorPage() {
         <div className="relative z-10 h-full w-full flex items-center justify-center">
           <div className="px-4 text-center max-w-5xl">
             <h1 className="text-white tracking-tight font-semibold leading-tight">
-              <span className="block text-4xl sm:text-5xl md:text-6xl">REQUEST A TUTOR</span>
+              <span className="block text-4xl sm:text-5xl md:text-6xl">REQUEST A Author</span>
             </h1>
             <p className="mt-3 text-green-500 text-base md:text-lg">
-              Answer a few quick questions. We'll help you find tutors in your area.
+              Answer a few quick questions. We'll help you find authors in your area.
             </p>
             <div className="mt-6">
               <a
@@ -46,7 +46,7 @@ export default function RequestTutorPage() {
         <div className="mx-auto max-w-5xl text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium text-gray-900 leading-snug">
             Learn from the nation’s largest community of
-            <br className="hidden sm:block" /> professional tutors.
+            <br className="hidden sm:block" /> professional authors.
           </h2>
         </div>
 

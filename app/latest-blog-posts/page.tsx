@@ -37,7 +37,7 @@ export default function Home() {
             Discover the Best Educational Resources
           </h1>
           <p className="text-base text-gray-700 max-w-2xl mx-auto">
-            Author Resources features free content created by the largest network of private tutors on the web{" "}
+            Author Resources features free content created by the largest network of private authors on the web{" "}
             <span className="text-blue-600">Explore and collaborate to start learning today!</span>
           </p>
         </div>
@@ -49,7 +49,7 @@ export default function Home() {
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Ask An Expert</h2>
             <p className="text-white text-sm">
-              Ask questions and get free answers from expert tutors
+              Ask questions and get free answers from expert authors
             </p>
           </div>
 
@@ -59,7 +59,7 @@ export default function Home() {
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Author Blog</h2>
             <p className="text-white text-sm">
-              Learn what's happening in the world of private tutoring
+              Learn what's happening in the world of private authoring
             </p>
           </div>
         </div>
