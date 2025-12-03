@@ -58,6 +58,7 @@ export interface WPUser  {
   tutoring_experience?: string;
   why_tutor?: string;
   references?: string;
+  timezone?: string;
   location_city_state?: string;
 };
 
@@ -67,15 +68,7 @@ export interface StudentDashboard {
   email : string;
   avatar: string;
   messages: string[];
-  bookings: {
-    appointment_id: number;
-    book_title: string;
-    student_name: string;
-    date: string;
-    amount: number;
-    duration: number;
-    status: string;
-  }
+  bookings: any[] | any;
   totalStudents: number;
   averageRating: GLfloat;
   
@@ -90,18 +83,35 @@ export interface AuthorDashboard {
   avatar: string;
   messages: string[];
   books: string[];
-  bookings: {
-    appointment_id: number;
-    book_title: string;
-    author_id: string;
-    student_name: string;
-    date: string;
-    duration: number;
-    amount: number;
-    status: string;
-  }
+  bookings: any[] | any;
   totalStudents: number;
   averageRating: GLfloat;
   
 };
+
+
+
+// export interface AuthorDashboard {
+//   monthlyEarnings: any;
+//   totalEarnings: any;
+//   id: number;
+//   name: string;
+//   email: string;
+//   avatar: string;
+//   messages: string[];
+//   books: string[];
+//   bookings: {
+//     appointment_id: number;
+//     book_title: string;
+//     author_id: string;
+//     student_name: string;
+//     date: string;
+//     duration: number;
+//     amount: number;
+//     status: string;
+//   }[];  // <-- FIX: Make bookings an array
+//   totalStudents: number;
+//   averageRating: GLfloat;
+// }
+
 

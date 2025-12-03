@@ -110,84 +110,101 @@ export default function SearchPage() {
   useDebounce(() => setDebounceSearchTerm(searchTerm), 500, [searchTerm]);
 
   useEffect(() => {
-    const abortCtrl = new AbortController();
+  const abortCtrl = new AbortController();
 
-    async function fetchUsers() {
-      setLoading(true);
-      try {
-        const base = (process.env.NEXT_PUBLIC_WP_URL ?? '').replace(/\/+$/, '');
-        let url = `${base}/wp-json/authorpro/v1/users?per_page=6&page=${page}&role=author`;
+  async function fetchUsers() {
+    setLoading(true);
+    try {
+      const base = (process.env.NEXT_PUBLIC_WP_URL ?? '').replace(/\/+$/, '');
+      const url = `${base}/wp-json/authorpro/v1/users?per_page=6&page=${page}&role=author`;
+      const params = new URLSearchParams();
 
-        const params = new URLSearchParams();
-        if (searchTerm) params.append('search', debounceSearchTerm);
-        if (filters.subjects.length > 0) {
-          filters.subjects.forEach((s) => params.append('subject[]', s));
-        }
-        params.append('min_rate', String(filters.priceRange[0]));
-        params.append('max_rate', String(filters.priceRange[1]));
-        params.append('min_age', String(filters.ageRange[0]));
-        params.append('max_age', String(filters.ageRange[1]));
-        if (filters.rating > 0) params.append('rating', String(filters.rating));
-        if (filters.credentials.backgroundCheck) {
-          params.append('background_check', '1');
-        }
-        if (filters.credentials.ixlCertified) {
-          params.append('ixl_certified', '1');
-        }
-        if (filters.credentials.licensedTeacher) {
-          params.append('licensed_teacher', '1');
-        }
-        if (filters.instantBook) params.append('instant_book', '1');
-        if (filters.inPerson) params.append('in_person', '1');
-        if (filters.availability && filters.availability !== 'any') {
-          params.append('availability', filters.availability);
-        }
+      if (searchTerm) params.append('search', debounceSearchTerm);
+      if (filters.subjects.length > 0) {
+        filters.subjects.forEach((s) => params.append('subject[]', s));
+      }
+      params.append('min_rate', String(filters.priceRange[0]));
+      params.append('max_rate', String(filters.priceRange[1]));
+      params.append('min_age', String(filters.ageRange[0]));
+      params.append('max_age', String(filters.ageRange[1]));
 
-        url += `&${params.toString()}`;
-        const res = await fetch(url, { signal: abortCtrl.signal });
-        if (!res.ok) throw new Error(`Fetch error ${res.status}`);
-        const json = await res.json();
-        const data: WPUser[] = json.users ?? json;
-        setTotalPages(json.total_pages ?? 1);
+      if (filters.rating > 0) params.append('rating', String(filters.rating));
+      if (filters.credentials.backgroundCheck) params.append('background_check', '1');
+      if (filters.credentials.ixlCertified) params.append('ixl_certified', '1');
+      if (filters.credentials.licensedTeacher) params.append('licensed_teacher', '1');
+      if (filters.instantBook) params.append('instant_book', '1');
+      if (filters.inPerson) params.append('in_person', '1');
+      if (filters.availability && filters.availability !== 'any') {
+        params.append('availability', filters.availability);
+      }
 
-        const mapped: Tutor[] = data.map((u) => ({
-          id: String(u.id),
-          name: u.name,
-          avatar: u.avatar ?? '/default-avatar.png',
-          bio: u.description ?? '',
-          subjects: Array.isArray(u.subjects)
-            ? u.subjects.map((s) => decodeHTML(s))
-            : u.subjects
-            ? [decodeHTML(u.subjects)]
-            : [],
-          hourlyRate: u.hourly_rate ? parseFloat(u.hourly_rate) : 0,
-          rating: u.rating ?? 0,
-          reviewCount: u.reviewCount ?? 0,
-          location: u.location ?? '',
-          books: u.books ?? [],
-          responseTime: u.responseTime ?? '',
-          availability: Array.isArray(u.availability)
-            ? u.availability.join(', ')
-            : (u.availability as string) ?? '',
-          education: u.education ?? '',
-          experience: u.experience ?? '',
-          languages: u.languages
-            ? u.languages.split(',').map((l) => l.trim())
-            : [],
-          reviews: [],
-        }));
+      const fullUrl = url + '&' + params.toString();
 
-        setTutors(mapped);
-      } catch (err: any) {
-        if (err.name !== 'AbortError') console.error(err);
-      } finally {
+      const res = await fetch(fullUrl, { signal: abortCtrl.signal });
+      if (!res.ok) {
+        throw new Error(`Fetch error ${res.status}`);
+      }
+
+      const json = await res.json();
+      const data = (json.users ?? json) as WPUser[];
+      const totalPagesFromApi = json.total_pages ?? json.total_pages;  // adjust if different
+
+      setTotalPages(totalPagesFromApi || 1);
+
+      const mapped: Tutor[] = data.map((u) => ({
+        id: String(u.id),
+        name: u.name,
+        avatar: u.avatar ?? '/default-avatar.png',
+        bio: u.description ?? '',
+        subjects: Array.isArray(u.subjects)
+          ? u.subjects.map((s) => decodeHTML(s))
+          : u.subjects
+          ? [decodeHTML(u.subjects as string)]
+          : [],
+        hourlyRate: u.hourly_rate ? parseFloat(u.hourly_rate) : 0,
+        // Use backend-returned dynamic rating & reviews if present:
+        avg_rating: (u as any).avg_rating ?? undefined,
+        total_reviews: (u as any).reviewCount ?? undefined,
+        // fallback older fields if needed:
+        rating: u.rating ?? 0,
+        reviewCount: u.reviewCount ?? 0,
+
+        location: u.location ?? '',
+        books: u.books ?? [],
+        responseTime: u.responseTime ?? '',
+        availability: Array.isArray(u.availability)
+          ? u.availability.join(', ')
+          : (u.availability as string) ?? '',
+        education: u.education ?? '',
+        experience: u.experience ?? '',
+        languages: u.languages
+          ? (u.languages as string).split(',').map((l) => l.trim())
+          : [],
+        reviews: [],
+      }));
+
+      setTutors(mapped);
+    } catch (err: any) {
+      if (!abortCtrl.signal.aborted) {
+        console.error('Error fetching users:', err);
+        // Optionally set an error state here
+      }
+    } finally {
+      if (!abortCtrl.signal.aborted) {
         setLoading(false);
       }
     }
+  }
 
-    fetchUsers();
-    return () => abortCtrl.abort();
-  }, [debounceSearchTerm, filters, page]);
+  fetchUsers();
+  // console.log("API response:", JSON);
+
+
+  return () => {
+    abortCtrl.abort();
+  };
+}, [debounceSearchTerm, filters, page]);
+
 
   return (
     <div className="min-h-screen bg-background">

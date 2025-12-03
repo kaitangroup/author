@@ -12,11 +12,14 @@ import { Calendar, Clock, MessageCircle, Video, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { AuthorDashboard } from '@/lib/types';
 import Link from 'next/link';
+import { useRouter } from "next/navigation";
+
 
 const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
 
 export default function BookingsPage() {
   const [wpToken, setWpToken] = useState<string | null>(null);
+   const router = useRouter();
   const [authorDashboard, setAuthorDashboard] =
     useState<AuthorDashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,13 +83,19 @@ export default function BookingsPage() {
           }
         );
 
+        
+
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           throw new Error(data?.message || 'Failed to load bookings');
         }
 
+
         const data: AuthorDashboard = await res.json();
         setAuthorDashboard(data);
+
+
+
       } catch (err: any) {
         console.error('Bookings fetch error', err);
         setError(err.message || 'Failed to load bookings');
@@ -130,6 +139,65 @@ export default function BookingsPage() {
 
 
 
+const handleCancelBooking = async (appointmentId: number) => {
+  if (!wpToken) {
+    toast.error('Missing auth token');
+    return;
+  }
+
+  const confirmCancel = window.confirm('Are you sure you want to cancel this booking?');
+  if (!confirmCancel) return;
+
+  try {
+    const res = await fetch(`${apiUrl}wp-json/custom/v1/cancel-booking`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${wpToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ appointment_id: appointmentId }),
+    });
+
+    const data: { success?: boolean; message?: string } = await res.json();
+
+    if (!res.ok || data.success === false) {
+      throw new Error(data?.message || 'Failed to cancel booking');
+    }
+
+
+
+
+    // 🔥 Type-safe state update — No more red marks!
+    setAuthorDashboard(
+      (prev: AuthorDashboard | null): AuthorDashboard | null => {
+        if (!prev) return prev;
+
+        const updatedBookings = prev.bookings.map((b: any) =>
+          b.appointment_id === appointmentId ? { ...b, status: 'cancelled' } : b
+        );
+
+        return {
+          ...prev,
+          bookings: updatedBookings,
+        };
+      }
+    );
+
+    toast.success('Booking cancelled successfully');
+  } catch (err: any) {
+    console.error('Cancel booking error', err);
+    toast.error(err.message || 'Failed to cancel booking');
+  }
+};
+
+
+
+
+  
+
+
+
+
   // ⭐ Rate Lesson button e click hole
   const openRatingModal = (booking: any) => {
     // helpful debug, ichchha hole console off kore dite paro
@@ -160,9 +228,7 @@ export default function BookingsPage() {
     // - tutor_id (jodi add kore thako)
     // - author_user_id (amra Bookly theke pathacchilam)
     const tutorId =
-      selectedBooking.tutor_id ??
-      selectedBooking.author_user_id ??
-      selectedBooking.author_id;
+      selectedBooking.tutor_id ;
 
     if (!tutorId) {
       console.error('No tutor id on booking', selectedBooking);
@@ -297,12 +363,26 @@ export default function BookingsPage() {
                       Join Lesson
                     </Button>
                     <Button
+                      onClick={() => router.push(`/messages?to=${booking.tutor_id}`)}
                       size="sm"
                       variant="outline"
                       className="w-full sm:w-auto"
                     >
                       <MessageCircle className="h-4 w-4 mr-2" />
                       Message
+                    </Button>
+
+
+
+
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={() => handleCancelBooking(booking.appointment_id)}
+>
+                      Cancel
                     </Button>
 
                   </>
@@ -318,14 +398,7 @@ export default function BookingsPage() {
                       <MessageCircle className="h-4 w-4 mr-2" />
                       Message Author
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full sm:w-auto"
-                      onClick={() => handleCancelBooking(booking.appointment_id)}
-                    >
-                      Cancel Request
-                    </Button>
+            
                   </>
                 )}
 

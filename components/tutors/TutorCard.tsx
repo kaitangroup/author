@@ -1,10 +1,12 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Star, MapPin, Clock, MessageCircle } from 'lucide-react';
-import Link from 'next/link';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useRouter } from 'next/navigation';
+"use client";
+
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Star, MapPin, Clock, MessageCircle } from "lucide-react";
+import Link from "next/link";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useRouter } from "next/navigation";
 
 type BookObject = {
   id: number;
@@ -19,12 +21,19 @@ interface Tutor {
   bio: string;
   subjects: string[];
   hourlyRate: number;
+
+  /** 🔥 Dynamically coming from backend */
+  avg_rating?: number;
+  total_reviews?: number;
+
+  /** UI backward support */
   rating: number;
   reviewCount: number;
+
   location: string;
   responseTime: string;
   availability: string;
- 
+
   books?: BookObject[] | string[] | string;
 }
 
@@ -35,29 +44,33 @@ interface TutorCardProps {
 export function TutorCard({ tutor }: TutorCardProps) {
   const router = useRouter();
 
-  
+  /** ✔ Fallback logic — if backend sends new field names */
+  const finalRating =
+    tutor.avg_rating !== undefined ? Number(tutor.avg_rating).toFixed(1) : tutor.rating;
+
+  const finalReviewCount =
+    tutor.total_reviews !== undefined ? tutor.total_reviews : tutor.reviewCount;
+
+  /** Books Normalize */
   const rawBooks = tutor.books;
 
   const normalizedBooks: { title: string; url?: string }[] = (() => {
     if (!rawBooks) return [];
 
-    // array হলে
     if (Array.isArray(rawBooks)) {
-      // object array: {id,title,book_url}
-      if (rawBooks.length > 0 && typeof rawBooks[0] === 'object') {
+      if (rawBooks.length > 0 && typeof rawBooks[0] === "object") {
         return (rawBooks as BookObject[]).map((b) => ({
           title: b.title,
           url: b.book_url || undefined,
         }));
       }
-      // string array: ['Book 1', 'Book 2']
+
       return (rawBooks as string[]).map((t) => ({ title: t }));
     }
 
-   
-    if (typeof rawBooks === 'string') {
+    if (typeof rawBooks === "string") {
       return rawBooks
-        .split(',')
+        .split(",")
         .map((s) => s.trim())
         .filter(Boolean)
         .map((title) => ({ title }));
@@ -76,21 +89,24 @@ export function TutorCard({ tutor }: TutorCardProps) {
             <AvatarImage src={tutor.avatar} alt={tutor.name} />
             <AvatarFallback>
               {tutor.name
-                .split(' ')
+                .split(" ")
                 .map((n) => n[0])
-                .join('')}
+                .join("")}
             </AvatarFallback>
           </Avatar>
 
           <div className="flex-1">
             <h3 className="text-lg font-semibold mb-1">{tutor.name}</h3>
+
+            {/* ⭐ Dynamic Rating */}
             <div className="flex items-center gap-1 mb-2">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="text-sm font-medium">{tutor.rating}</span>
+              <span className="text-sm font-medium">{finalRating}</span>
               <span className="text-sm text-gray-500">
-                ({tutor.reviewCount} reviews)
+                ({finalReviewCount} reviews)
               </span>
             </div>
+
             <div className="flex items-center gap-4 text-sm text-gray-600">
               <div className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
@@ -104,12 +120,10 @@ export function TutorCard({ tutor }: TutorCardProps) {
           </div>
         </div>
 
-       
+        {/* Books */}
         {hasBooks ? (
           <div className="mb-4">
-            <p className="text-gray-700 text-sm font-semibold mb-2">
-              Books
-            </p>
+            <p className="text-gray-700 text-sm font-semibold mb-2">Books</p>
             <div className="flex flex-wrap gap-2">
               {normalizedBooks.slice(0, 3).map((book, idx) =>
                 book.url ? (
@@ -119,10 +133,7 @@ export function TutorCard({ tutor }: TutorCardProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Badge
-                      variant="secondary"
-                      className="text-xs cursor-pointer"
-                    >
+                    <Badge variant="secondary" className="text-xs cursor-pointer">
                       {book.title}
                     </Badge>
                   </Link>
@@ -145,10 +156,10 @@ export function TutorCard({ tutor }: TutorCardProps) {
             {tutor.bio}
           </p>
         )}
+
+        {/* Subjects */}
         <div className="mb-4">
-          <p className="text-gray-700 text-sm font-semibold mb-2">
-                Subjects
-              </p>
+          <p className="text-gray-700 text-sm font-semibold mb-2">Subjects</p>
           <div className="flex flex-wrap gap-2 mb-4">
             {tutor.subjects.slice(0, 3).map((subject) => (
               <Badge key={subject} variant="secondary" className="text-xs">
@@ -163,6 +174,7 @@ export function TutorCard({ tutor }: TutorCardProps) {
           </div>
         </div>
 
+        {/* Footer */}
         <div className="flex items-center justify-between">
           <div className="text-lg font-bold text-blue-600">
             ${tutor.hourlyRate}/hr

@@ -16,6 +16,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+// ✅ date-fns v3 style
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
+
 import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
@@ -51,6 +54,7 @@ type WPTutor = {
   why_tutor?: string;
   references?: string;
   location_city_state?: string;
+  timezone?: string;
 };
 
 interface BookingModalProps {
@@ -63,6 +67,7 @@ interface TimeSlot {
   time: string;
   available: boolean;
   selected?: boolean;
+  startUtcIso?: string; 
 }
 
 interface DayData {
@@ -77,6 +82,10 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const authorTimeZone = tutor?.timezone || 'UTC';
+const userTimeZone =
+  Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -119,86 +128,91 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
   // Derive the actual selected date from the time-slot key: "timestamp|time"
   const selectedSlotDate: Date | null = useMemo(() => {
     if (!selectedTimeSlot) return null;
-    const [ts] = selectedTimeSlot.split('|');
-    const ms = Number(ts);
-    if (!Number.isFinite(ms)) return null;
-    const d = new Date(ms);
+    const [iso] = selectedTimeSlot.split('|');
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
     return normalizeDate(d);
   }, [selectedTimeSlot]);
 
   // Generate mock time slots
-  const generateTimeSlots = (date: Date, isWeekend: boolean = false): TimeSlot[] => {
-    const baseSlots = [
-      '7:00 am',
-      '8:00 am',
-      '9:00 am',
-      '10:00 am',
-      '11:00 am',
-      '12:00 pm',
-      '1:00 pm',
-      '2:00 pm',
-      '3:00 pm',
-      '4:00 pm',
-      '5:00 pm',
-      '6:00 pm',
-    ];
+ const generateTimeSlots2 = (date: Date): TimeSlot[] => {
+  // Start at 6:00 am
+  const baseSlots = [
+    "00:00 am","1:00 am","2:00 am","3:00 am","4:00 am","5:00 am","6:00 am", "7:00 am", "8:00 am", "9:00 am", "10:00 am", "11:00 am",
+    "12:00 pm", "1:00 pm", "2:00 pm", "3:00 pm", "4:00 pm", "5:00 pm",
+    "6:00 pm", "7:00 pm", "8:00 pm", "9:00 pm", "10:00 pm", "11:00 pm",
+  ];
 
-    return baseSlots.map((time) => ({
-      time,
-      available: !isWeekend && Math.random() > 0.3,
-    }));
-  };
+  // Get weekday in AUTHOR timezone
+  const dateInAuthorTz = toZonedTime(date, authorTimeZone);
+  const weekday = dateInAuthorTz
+    .toLocaleDateString("en-US", {
+      weekday: "long",
+      timeZone: authorTimeZone,
+    })
+    .toLowerCase();
 
-  const generateTimeSlots2 = (date: Date): TimeSlot[] => {
-    const baseSlots = [
-      "7:00 am", "8:00 am", "9:00 am", "10:00 am", "11:00 am",
-      "12:00 pm", "1:00 pm", "2:00 pm", "3:00 pm", "4:00 pm",
-      "5:00 pm", "6:00 pm"
-    ];
-  
-    const weekday = date
-      .toLocaleDateString("en-US", { weekday: "long" })
-      .toLowerCase();
-  
-    // Find availability for this weekday ONLY
-    const dayAvailability = tutor?.availability?.filter((a) =>
+  const dayAvailability =
+    tutor?.availability?.filter((a) =>
       a.toLowerCase().startsWith(weekday)
     ) ?? [];
-  
-    // Parse availability → blocks
-    const blocks: Record<string, string[]> = {
-      morning: ["7:00 am", "8:00 am", "9:00 am", "10:00 am", "11:00 am", "12:00 pm"],
-      afternoon: ["1:00 pm", "2:00 pm", "3:00 pm", "4:00 pm", "5:00 pm"],
-      evening: ["6:00 pm"] // optional, you can expand
-    };
-  
-    let allowedSlots: string[] = [];
-  
-    dayAvailability.forEach((item) => {
-      const lower = item.toLowerCase();
-      if (lower.includes("morning")) allowedSlots = allowedSlots.concat(blocks.morning);
-      if (lower.includes("afternoon")) allowedSlots = allowedSlots.concat(blocks.afternoon);
-      if (lower.includes("evening")) allowedSlots = allowedSlots.concat(blocks.evening);
-    });
-  
-    const now = new Date();
-  
-    return baseSlots.map((time) => {
-      const parsed = parseTwelveHour(time);
-      if (!parsed) return { time, available: false };
-  
-      const slotDate = new Date(date);
-      slotDate.setHours(parsed.h, parsed.min, 0, 0);
-  
-      const isInPast = slotDate.getTime() < now.getTime();
-      const tutorAllows = allowedSlots.includes(time);
-  
-      return {
-        time,
-        available: tutorAllows && !isInPast, // always boolean
-      };
-    });
+
+  const blocks: Record<string, string[]> = {
+    morning: [
+      "00:00 am","1:00 am","2:00 am","3:00 am","4:00 am","5:00 am", "6:00 am", "7:00 am", "8:00 am", "9:00 am", "10:00 am", "11:00 am",
+    ],
+    afternoon: [
+      "12:00 pm", "1:00 pm", "2:00 pm", "3:00 pm", "4:00 pm", "5:00 pm",
+    ],
+    evening: [
+      "6:00 pm", "7:00 pm", "8:00 pm", "9:00 pm", "10:00 pm", "11:00 pm",
+    ],
   };
+
+  let allowedSlots: string[] = [];
+  dayAvailability.forEach((item) => {
+    const lower = item.toLowerCase();
+    if (lower.includes("morning")) allowedSlots = allowedSlots.concat(blocks.morning);
+    if (lower.includes("afternoon")) allowedSlots = allowedSlots.concat(blocks.afternoon);
+    if (lower.includes("evening")) allowedSlots = allowedSlots.concat(blocks.evening);
+  });
+
+  const nowUtc = new Date();
+
+  return baseSlots.map((label) => {
+    const parsed = parseTwelveHour(label);
+    if (!parsed) return { time: label, available: false };
+
+    const { h, min } = parsed;
+
+    // --- CORRECT TIMEZONE LOGIC ---
+    // 1️⃣ Create wall-clock author time (NO UTC)
+    const y = dateInAuthorTz.getFullYear();
+    const m = dateInAuthorTz.getMonth();
+    const d = dateInAuthorTz.getDate();
+
+    const authorLocal = new Date(y, m, d, h, min, 0);
+
+    // 2️⃣ Convert author-local → UTC
+    const utcDate = fromZonedTime(authorLocal, authorTimeZone);
+
+    // 3️⃣ UTC → user timezone (display only)
+    const userLocal = toZonedTime(utcDate, userTimeZone);
+
+    const isInPast = utcDate.getTime() < nowUtc.getTime();
+    const tutorAllows = allowedSlots.includes(label);
+
+    return {
+      time: userLocal.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      }),
+      available: tutorAllows && !isInPast,
+      startUtcIso: utcDate.toISOString(),
+    };
+  });
+};
+  
   
   
   
@@ -337,28 +351,21 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
 
     // selectedTimeSlot example: "1700284800000|10:00 am"
     const parts = selectedTimeSlot.split('|');
-    if (parts.length < 2) {
+    if (parts.length < 1) {
       toast.error('Invalid selection');
       return;
     }
-    const [ts] = parts;
-    const timeStr = parts.slice(1).join('|'); // handle any pipes in time though not expected
-    const parsed = parseTwelveHour(timeStr);
-    if (!parsed) {
-      toast.error('Invalid time slot format');
+    
+    const [iso] = parts;
+    const start = new Date(iso);
+    
+    if (isNaN(start.getTime())) {
+      toast.error('Invalid time slot');
       return;
     }
-
-    const ms = Number(ts);
-    if (!Number.isFinite(ms) || !selectedSlotDate) {
-      toast.error('Invalid date selection');
-      return;
-    }
-
-    // Build the booking start using the actual slot date, not the current middle column
-    const start = new Date(selectedSlotDate);
-    start.setHours(parsed.h, parsed.min, 0, 0);
+    
     const startIso = toIsoWithOffset(start);
+    
 
     // Get WP user id (Header stores this in localStorage at login)
     const raw = localStorage.getItem('wpUserdata');
@@ -584,9 +591,11 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
                                 <h3 className="font-semibold text-gray-900">{day.date}</h3>
                                 <p className="text-sm text-gray-600">{day.dayName}</p>
                               </div>
-                              <div className="space-y-2">
-                                {day.timeSlots.slice(0, 12).map((slot, slotIndex) => {
-                                  const keyForSlot = `${day.fullDate.getTime()}|${slot.time}`;
+                              <div className="mt-4 max-h-80 overflow-y-auto space-y-2">
+                                {day.timeSlots.map((slot, slotIndex) => {
+                                  const keyForSlot = `${slot.startUtcIso}|${slot.time}`;
+
+
                                   return (
                                     <button
                                       type="button"
@@ -607,11 +616,7 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
                                     </button>
                                   );
                                 })}
-                                {day.timeSlots.slice(12).some((slot) => !slot.available) && (
-                                  <div className="text-xs text-gray-400 text-center pt-2">
-                                    More times available
-                                  </div>
-                                )}
+                              
                               </div>
                             </div>
                           ))}
