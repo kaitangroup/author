@@ -159,7 +159,7 @@ const userTimeZone =
 
   const blocks: Record<string, string[]> = {
     morning: [
-      "00:00 am","1:00 am","2:00 am","3:00 am","4:00 am","5:00 am", "6:00 am", "7:00 am", "8:00 am", "9:00 am", "10:00 am", "11:00 am",
+      "6:00 am", "7:00 am", "8:00 am", "9:00 am", "10:00 am", "11:00 am",
     ],
     afternoon: [
       "12:00 pm", "1:00 pm", "2:00 pm", "3:00 pm", "4:00 pm", "5:00 pm",
