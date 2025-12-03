@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { JSXElementConstructor, Key, PromiseLikeOfReactNode, ReactElement, ReactNode, ReactPortal, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import NextLink from 'next/link';
 import { Header } from '@/components/layout/Header';
@@ -130,19 +130,19 @@ export default function TutorProfilePage() {
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4 text-sm sm:text-base justify-center md:justify-start">
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-yellow-400 text-yellow-400" />
-                          <span className="font-medium">{tutor?.rating}</span>
+                          <span className="font-medium">{author?.average_rating}</span>
                           <span className="text-gray-500">
-                            ({tutor?.reviewCount} reviews)
+                            ({author?.reviews_count} reviews)
                           </span>
                         </div>
                         <div className="flex items-center gap-1 text-gray-600">
                           <MapPin className="h-4 w-4" />
                           <span>{author?.location}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-gray-600">
+                        {/* <div className="flex items-center gap-1 text-gray-600">
                           <Clock className="h-4 w-4" />
                           <span>Responds in {tutor?.responseTime}</span>
-                        </div>
+                        </div> */}
                       </div>
 
                       {/* Subjects */}
@@ -278,12 +278,12 @@ export default function TutorProfilePage() {
               {/* Reviews */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Reviews ({tutor?.reviewCount})</CardTitle>
+                  <CardTitle>Reviews ({author?.reviews_count})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {tutor?.reviews && tutor.reviews.length > 0 ? (
+                  {author?.reviews && author.reviews.length > 0 ? (
                     <div className="space-y-4">
-                      {tutor.reviews.map((review) => (
+                      {author.reviews.map((review: { id: Key | null | undefined; rating: number; studentName: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | PromiseLikeOfReactNode | null | undefined; date: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | PromiseLikeOfReactNode | null | undefined; comment: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | PromiseLikeOfReactNode | null | undefined; }) => (
                         <div
                           key={review.id}
                           className="border-b last:border-b-0 pb-4 last:pb-0"

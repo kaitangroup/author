@@ -95,7 +95,7 @@ export default function StudentLoginPage() {
         toast.success("Login successful!");
         if(profiledata.role == 'author'){
           console.log("profiledata.profile_completed",profiledata.profile_completed);
-          if(profiledata.profile_completed == 'yes'){
+          if(profiledata.profile_completed == '100'){
             router.push("/dashboard/author");
           
           }else{

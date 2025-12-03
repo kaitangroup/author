@@ -91,6 +91,7 @@ export default function SearchPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  const [totalAutors, setTotalAutors] = useState(0);
   const [userEmail, setUserEmail] = useState('');
   const [savingSearch, setSavingSearch] = useState(false);
   const [searchTypes, setSearchTypes] = useState<string[]>([]);
@@ -148,7 +149,7 @@ export default function SearchPage() {
       const json = await res.json();
       const data = (json.users ?? json) as WPUser[];
       const totalPagesFromApi = json.total_pages ?? json.total_pages;  // adjust if different
-
+      setTotalAutors(json.total || 0);
       setTotalPages(totalPagesFromApi || 1);
 
       const mapped: Tutor[] = data.map((u) => ({
@@ -243,7 +244,7 @@ export default function SearchPage() {
             <p className="text-gray-600">
               {loading
                 ? 'Loading...'
-                : `${tutors.length} Authors found (Page ${page} of ${totalPages})`}
+                : `${tutors.length} Out of ${totalAutors} Authors displayed (Page ${page} of ${totalPages})`}
             </p>
           </div>
 

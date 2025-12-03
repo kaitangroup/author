@@ -60,6 +60,9 @@ export interface WPUser  {
   references?: string;
   timezone?: string;
   location_city_state?: string;
+  average_rating?: string;
+  reviews_count?: number;
+  reviews: any[] | any;
 };
 
 export interface StudentDashboard {
@@ -74,6 +77,14 @@ export interface StudentDashboard {
   
 };
 
+// Define the Review type locally if it's not exported from '@/lib/types'
+export type Review = {
+  id: string;
+  studentName: string;
+  rating: number;
+  comment: string;
+  date: string;
+};
 export interface AuthorDashboard {
   monthlyEarnings: any;
   totalEarnings: any;

@@ -48,7 +48,7 @@ export default function TutorDashboard() {
   const totalEarnings = authorDashboard ? authorDashboard.totalEarnings  : 0; // Mock data
   const monthlyEarnings = authorDashboard ? authorDashboard.totalEarnings : 0; // Mock data
   const totalStudents = authorDashboard ? authorDashboard.totalStudents : 0; // Mock data
-  const averageRating = 0.0; // Mock data
+  const averageRating = authorDashboard ? authorDashboard.averageRating  : 0.0;
 
   const upcomingBookings = authorDashboard && Array.isArray(authorDashboard.bookings)
     ? authorDashboard.bookings.filter((booking: any) => booking?.status === 'approved')
@@ -308,19 +308,37 @@ export default function TutorDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {pendingBookings.map((booking) => (
-                        <div key={booking.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                          <Avatar>
-                            <AvatarFallback>ST</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <h4 className="font-medium">{booking.subject} Request</h4>
-                            <p className="text-sm text-gray-600">Student: Jane Smith</p>
-                            <p className="text-sm text-gray-600">{booking.date} at {booking.time}</p>
-                          </div>
-                         
-                        </div>
-                      ))}
+
+                    {pendingBookings.map((booking) => {
+  const { date, time } = toLocalDateTime(booking.start_iso);
+
+  return (
+    <div key={booking?.appointment_id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+      <Avatar>
+        <AvatarImage src={booking.avatar} />
+        <AvatarFallback>{booking.name}</AvatarFallback>
+      </Avatar>
+      <div className="flex-1">
+        <h4 className="font-medium">
+          {booking.subject} with {booking.name}
+        </h4>
+        <p className="text-sm text-gray-600">
+          {date} at {time}
+        </p>
+        <div className="flex items-center gap-2 mt-1">
+        <Clock className="h-3 w-3 text-gray-400" />
+        <span className="text-xs text-gray-500">{booking.duration} minutes</span>
+      </div>
+
+    </div>
+    <div className="text-right">
+      <Badge variant="secondary">{booking.status}</Badge>
+      <p className="text-sm font-medium mt-1">${booking.price}</p>
+    </div>
+  </div>
+  );
+})}
+            
                     </div>
                   </CardContent>
                 </Card>
