@@ -22,21 +22,27 @@ export default function ContactPage() {
     message: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Simulate form submission
-    toast.success('Thank you for your message! We\'ll get back to you within 24 hours.');
-    
-    // Reset form
-    setFormData({
-      name: '',
-      email: '',
-      subject: '',
-      category: '',
-      message: '',
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
     });
-  };
+    const json = await res.json();
+    if (json.success) {
+      toast.success('Message sent successfully!');
+      setFormData({ name: '', email: '', subject: '', category: '', message: '' });
+    } else {
+      toast.error('Failed to send message.');
+    }
+  } catch (err) {
+    toast.error('Something went wrong.');
+  }
+};
+
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));

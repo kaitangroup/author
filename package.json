@@ -81,6 +81,7 @@
   },
   "devDependencies": {
     "@types/next": "^8.0.7",
-    "@types/next-auth": "^3.13.0"
+    "@types/next-auth": "^3.13.0",
+    "baseline-browser-mapping": "^2.9.4"
   }
 }

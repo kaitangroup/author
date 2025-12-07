@@ -14,7 +14,7 @@ import { AuthorDashboard } from '@/lib/types';
 import Link from 'next/link';
 import { useRouter } from "next/navigation";
 
-
+ 
 const apiUrl = process.env.NEXT_PUBLIC_WP_URL;
 
 export default function BookingsPage() {
@@ -237,7 +237,7 @@ const handleCancelBooking = async (appointmentId: number) => {
     }
 
     try {
-      const res = await fetch(`${apiUrl}wp-json/acr/v1/submit-rating`, {
+      const res = await fetch(`${apiUrl}wp-json/custom/v1/lesson-rating`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
