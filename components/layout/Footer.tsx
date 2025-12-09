@@ -27,7 +27,7 @@ export function Footer() {
               <li><Link href="/search" className="text-gray-300 hover:text-white">Find Author</Link></li>
               <li><Link href="/auth/user/register" className="text-gray-300 hover:text-white">Sign Up</Link></li>
               <li><Link href="/blogs" className="text-gray-300 hover:text-white">Blog</Link></li>
-              <li><Link href="/latest-blog-posts" className="text-gray-300 hover:text-white">Latest Blog Posts</Link></li>
+             
             </ul>
           </div>
 
