@@ -1,17 +1,27 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import Providers from "@/components/providers";
 import InitialOverlay from '@/components/InitialOverlay'; 
 import { Toaster } from "@/components/ui/toaster";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = localFont({
+  src: [
+    { path: "./fonts/Inter-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/Inter-Medium.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/Inter-SemiBold.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/Inter-Bold.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/Inter-ExtraBold.woff2", weight: "800", style: "normal" },
+  ],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "AuthorConnect - Find Your Perfect Author",
   description:
     "Connect with qualified authors for personalized learning. Browse subjects, book lessons, and achieve your academic goals.",
-  keywords: "author, authoring, education, learning, online authoring, academic support",
+  keywords:
+    "author, authoring, education, learning, online authoring, academic support",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -22,10 +32,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         suppressHydrationWarning
       >
         <Providers>
-        <InitialOverlay minMs={400} oncePerTab={true} />
+          <InitialOverlay minMs={400} oncePerTab={true} />
           {children}
           <Toaster />
-          </Providers>
+        </Providers>
       </body>
     </html>
   );

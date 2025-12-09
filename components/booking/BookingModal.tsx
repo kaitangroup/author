@@ -83,6 +83,8 @@ function BookingModalInner({ isOpen, onClose, tutor }: BookingModalProps) {
   const elements = useElements();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const authorTimeZone = tutor?.timezone || 'UTC';
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
 const userTimeZone =
   Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
@@ -334,18 +336,24 @@ const userTimeZone =
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isSubmitting) return; // ⛔ ignore double-clicks
+    setIsSubmitting(true);
+
     if (!selectedTimeSlot) {
       toast.error('Pick a time first');
+      setIsSubmitting(false);
       return;
     }
 
     if (!stripe || !elements) {
       toast.error('Stripe not loaded');
+      setIsSubmitting(false);
       return;
     }
 
     if (!formData.subject || !selectedTimeSlot) {
       toast.error('Please fill all fields');
+      setIsSubmitting(false);
       return;
     }
 
@@ -353,6 +361,7 @@ const userTimeZone =
     const parts = selectedTimeSlot.split('|');
     if (parts.length < 1) {
       toast.error('Invalid selection');
+      setIsSubmitting(false);
       return;
     }
     
@@ -361,6 +370,7 @@ const userTimeZone =
     
     if (isNaN(start.getTime())) {
       toast.error('Invalid time slot');
+      setIsSubmitting(false);
       return;
     }
     
@@ -373,6 +383,7 @@ const userTimeZone =
     const userId = wpdata?.id;
     if (!userId) {
       toast.error('Not logged in (no WordPress user id found).');
+      setIsSubmitting(false);
       return;
     }
 
@@ -383,6 +394,7 @@ const userTimeZone =
 
     if (!endpoint || !token || !serviceId || !staffId) {
       toast.error('Missing Bookly env config.');
+      setIsSubmitting(false);
       return;
     }
 
@@ -405,6 +417,7 @@ const userTimeZone =
 
       if (result.error) {
         toast.error(result.error.message || 'Payment failed');
+        setIsSubmitting(false);
         return;
       } else if (result.paymentIntent?.status === 'succeeded') {
         // Create booking in Bookly
@@ -445,6 +458,7 @@ const userTimeZone =
 
         if (!res2.ok) {
           const err = await res2.json().catch(() => ({}));
+          setIsSubmitting(false);
           throw new Error(err?.message || `HTTP ${res2.status}`);
         }
 
@@ -456,6 +470,9 @@ const userTimeZone =
     } catch (err: any) {
       console.error(err);
       toast.error(`Booking failed: ${err.message || err}`);
+      setIsSubmitting(false);
+    } finally {
+      setIsSubmitting(false); // re-enable after request
     }
   };
 
@@ -782,9 +799,10 @@ const userTimeZone =
             </Button>
             <Button
               type="submit"
+              disabled={isSubmitting}
               className="flex-1 bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
             >
-              Send Booking Request
+              {isSubmitting ? "Processing..." : "Send Booking Request"}
             </Button>
           </div>
         </form>
