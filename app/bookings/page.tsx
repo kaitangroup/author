@@ -464,13 +464,11 @@ const handleCancelBooking = async (appointmentId: number) => {
             </Card>
           ) : (
             <Tabs defaultValue="upcoming" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="upcoming">
                   Upcoming ({upcomingBookings.length})
                 </TabsTrigger>
-                <TabsTrigger value="pending">
-                  Pending ({pendingBookings.length})
-                </TabsTrigger>
+         
                 <TabsTrigger value="past">
                   Past ({pastBookings.length})
                 </TabsTrigger>
@@ -501,7 +499,7 @@ const handleCancelBooking = async (appointmentId: number) => {
                   </Card>
                 )}
               </TabsContent>
-
+{/* 
               <TabsContent value="pending" className="mt-6">
                 {pendingBookings.length > 0 ? (
                   pendingBookings.map((booking) => (
@@ -523,7 +521,7 @@ const handleCancelBooking = async (appointmentId: number) => {
                     </CardContent>
                   </Card>
                 )}
-              </TabsContent>
+              </TabsContent> */}
 
               <TabsContent value="past" className="mt-6">
                 {pastBookings.length > 0 ? (

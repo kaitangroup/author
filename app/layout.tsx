@@ -5,6 +5,9 @@ import Providers from "@/components/providers";
 import InitialOverlay from '@/components/InitialOverlay'; 
 import { Toaster } from "@/components/ui/toaster";
 
+
+
+
 const inter = localFont({
   src: [
     { path: "./fonts/Inter-Regular.woff2", weight: "400", style: "normal" },

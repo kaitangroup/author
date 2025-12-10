@@ -393,7 +393,8 @@ const userTimeZone =
     const staffId = Number(tutor?.staff_id || 0);
 
     if (!endpoint || !token || !serviceId || !staffId) {
-      toast.error('Missing Bookly env config.');
+      toast.error(
+        `Missing Bookly env config. endpint: ${endpoint}   token: ${token}  serviceId:  ${serviceId}  Staff:  ${staffId}`);
       setIsSubmitting(false);
       return;
     }
