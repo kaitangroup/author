@@ -31,25 +31,83 @@ export default function StudentLoginPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  useEffect(() => {
+    const token = localStorage.getItem("wpToken");
+  
+    if (!token) return;
+  
+    // if user already logged in → redirect away from login page
+    const checkProfile = async () => {
+      try {
+        const res = await fetch(`${apiUrl}wp-json/custom/v1/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+  
+        const profile = await res.json();
+  
+        if (!res.ok) return;
+  
+        // save in localStorage for Header use
+        localStorage.setItem("wpUserdata", JSON.stringify(profile));
+  
+        if (profile.role === "author") {
+          if (profile.profile_completed == "100") {
+            router.replace("/dashboard/author");
+          } else {
+            router.replace("/apply");
+          }
+        } else if (profile.role === "subscriber" || profile.role === "student") {
+          router.replace("/dashboard/student");
+        } else {
+          router.replace("/");
+        }
+      } catch (e) {
+        console.error("Auto-redirect failed:", e);
+      }
+    };
+  
+    checkProfile();
+  }, []);
+  
+
   // ✅ Social Login (NextAuth + WP API)
-  const handleSocialLogin = async (provider: "google" | "apple" | "facebook") => {
+  // const handleSocialLogin = async (provider: "google" | "apple" | "facebook") => {
+  //   try {
+  //     setSocialLoading(provider);
+  //     console.log("🔹 Social Login Start:", provider);
+  
+  //     // NextAuth signIn (no redirect yet)
+  //     await signIn(provider, { callbackUrl: "/dashboard/student" });
+
+
+  
+  
+  //   } catch (err) {
+  //     console.error(`❌ Login with ${provider} failed:`, err);
+  //     toast.error(`Login with ${provider} failed`);
+  //   } finally {
+  //     setSocialLoading(null);
+  //   }
+  // };
+
+  const handleSocialLogin = async (provider: "google" | "facebook") => {
     try {
       setSocialLoading(provider);
-      console.log("🔹 Social Login Start:", provider);
   
-      // NextAuth signIn (no redirect yet)
-      await signIn(provider, { callbackUrl: "/dashboard/student" });
-
-
-  
+      // FULL REDIRECT FLOW
+      await signIn(provider, {
+        callbackUrl: "/auth/social/callback", // We will process everything here
+      });
   
     } catch (err) {
-      console.error(`❌ Login with ${provider} failed:`, err);
-      toast.error(`Login with ${provider} failed`);
+      console.error("Social login error:", err);
+      toast.error("Login failed");
     } finally {
       setSocialLoading(null);
     }
   };
+  
+  
   
   
 
@@ -165,7 +223,7 @@ export default function StudentLoginPage() {
                       {socialLoading === "apple" ? "Please wait…" : "Log in with Apple"}
                     </Button> */}
 
-                    <Button
+                    {/* <Button
                       type="button"
                       variant="outline"
                       className="w-full h-12 border-gray-300 hover:bg-gray-50 flex items-center justify-center"
@@ -174,7 +232,7 @@ export default function StudentLoginPage() {
                     >
                       <FaFacebook className="w-5 h-5 mr-2 text-blue-600" />
                       {socialLoading === "facebook" ? "Please wait…" : "Log in with Facebook"}
-                    </Button>
+                    </Button> */}
                   </div>
 
                   {/* Divider */}
