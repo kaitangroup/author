@@ -237,7 +237,7 @@ const handleCancelBooking = async (appointmentId: number) => {
     }
 
     try {
-      const res = await fetch(`${apiUrl}wp-json/custom/v1/lesson-rating`, {
+      const res = await fetch(`${apiUrl}wp-json/acr/v1/submit-rating`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
