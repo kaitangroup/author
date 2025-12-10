@@ -404,6 +404,8 @@ const handleCancelBooking = async (appointmentId: number) => {
 
                 {booking.status !== 'approved' && booking.status !== 'pending' && (
                   <>
+                  {authorDashboard?.id !== booking?.tutor_id && (
+                      <>
                     <Button
                       size="sm"
                       variant="outline"
@@ -423,6 +425,8 @@ const handleCancelBooking = async (appointmentId: number) => {
                         Book Again
                       </Button>
                     </Link>
+                    </>
+                  )}
                   </>
                 )}
               </div>
