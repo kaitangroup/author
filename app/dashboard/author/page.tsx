@@ -1,7 +1,5 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,9 +11,7 @@ import {
 import Link from 'next/link';
 import { mockBookings, mockMessages } from '@/lib/mockData';
 import { AuthorDashboard } from '@/lib/types';
-import { RoleGuard } from '@/components/auth/RoleGuard';
 
-import { useSession } from "next-auth/react";
 
 // ... baki imports same
 
@@ -161,9 +157,9 @@ export default function TutorDashboard() {
 
 
   return (
-    <RoleGuard allowed={['author']} redirectTo="/">
-    <div className="min-h-screen bg-background">
-      <Header />
+  
+<>
+      
       
       <div className="py-8 px-4">
         <div className="max-w-7xl mx-auto">
@@ -199,6 +195,7 @@ export default function TutorDashboard() {
                     <p className="text-2xl font-bold">${monthlyEarnings}</p>
                     <p className="text-sm text-gray-600">This Month</p>
                   </div>
+                  
                 </div>
               </CardContent>
             </Card>
@@ -458,6 +455,19 @@ export default function TutorDashboard() {
                       Edit Profile
                     </Button>
                   </Link>
+
+                  <Link href="/dashboard/author/earnings">
+  <Button variant="outline" className="w-full justify-start">
+    💰 Earnings
+  </Button>
+</Link>
+
+<Link href="/dashboard/author/payout-settings">
+  <Button variant="outline" className="w-full justify-start">
+    🏦 Payout Settings
+  </Button>
+</Link>
+
                 </CardContent>
               </Card>
 
@@ -563,8 +573,8 @@ export default function TutorDashboard() {
         </div>
       </div>
       
-      <Footer />
-    </div>
-    </RoleGuard>
+
+</>
+ 
   );
 }
