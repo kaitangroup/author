@@ -104,6 +104,7 @@ export async function acDeleteMessage(
 
 /** ===== Sidebar helper ===== */
 export type ConversationItem = {
+  thread_id: number; 
   userId: number;
   participant: string;
   avatar?: string;
@@ -111,9 +112,11 @@ export type ConversationItem = {
   lastMessage: string;
   timestamp: string;
   unread?: boolean;
+
 };
 
 export function buildConversationFromMessages(
+  thread_id: number,        // ✅ FIRST ARG
   otherUserId: number,
   displayName: string,
   role: string,
@@ -121,15 +124,18 @@ export function buildConversationFromMessages(
   messages: ACMessage[]
 ): ConversationItem {
   const last = messages[messages.length - 1];
+
   return {
+    thread_id,  
     userId: otherUserId,
-    role: role,
+    role,
     participant: displayName,
     avatar,
     lastMessage: last ? stripHtml(last.content).slice(0, 120) : '',
     timestamp: last?.timestamp ?? '',
   };
 }
+
 
 function stripHtml(html: string) {
   if (!html) return '';

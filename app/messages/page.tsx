@@ -25,7 +25,7 @@ import {
 } from '@/lib/authorconnect';
 
 /* ================= Utils ================= */
-type WPUserLite = { id: number; name: string; avatar?: string , role?: string};
+type WPUserLite = { id: number; name: string; avatar?: string , role?: string, thread_id: number; };
 type ConvWithPresence = ConversationItem & {
   isActive: boolean;
   hasMessages?: boolean;
@@ -177,7 +177,7 @@ useEffect(() => {
         const target = list.find(u => u.id === onlyUserId);
         const merged: WPUserLite[] = target
           ? [target, ...list.filter(u => u.id !== onlyUserId)]
-          : [{ id: onlyUserId, name: '(loading...)', avatar: '' }, ...list];
+          : [{ id: onlyUserId, name: '(loading...)', avatar: '', thread_id: 0 }, ...list];
         setUsers(merged);
         setSelectedUserId(prev => prev ?? onlyUserId);
       } else {
@@ -202,6 +202,7 @@ useEffect(() => {
   // Build shallow list from users only (no per-user message fetch).
   const list: ConvWithPresence[] = users.map((u) => ({
     // The ConversationItem fields that buildConversationFromMessages would set
+    thread_id: u.thread_id, // Include thread_id to satisfy the ConversationItem type
     userId: u.id,
     participant: u.name,
     role: u.role,
@@ -239,6 +240,7 @@ useEffect(() => {
 
   // Build preview from the messages we *just* fetched for this user
   const conv = buildConversationFromMessages(
+    selUser.thread_id,
     selUser.id,
     selUser.name,
     selUser.role ?? '', 
@@ -297,6 +299,8 @@ useEffect(() => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [selectedUserId, token]);
+
+  
 
   /* ===== unread → read ===== */
   useEffect(() => {
@@ -403,6 +407,11 @@ useEffect(() => {
     return () => document.removeEventListener('click', onClick);
   }, []);
 
+
+
+
+  
+
   const filteredConversations = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     const base = conversations;
@@ -413,6 +422,21 @@ useEffect(() => {
   const selectedConv = conversations.find(c => c.userId === selectedUserId);
   const selectedName = selectedConv?.participant || users.find(u => u.id === selectedUserId)?.name || '';
   const selectedAvatar = selectedConv?.avatar || users.find(u => u.id === selectedUserId)?.avatar || '';
+
+  useEffect(() => {
+    if (!selectedConv || !token) return;
+  
+    fetch(`${WP_API_BASE}/authorconnect/v1/thread/read`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        thread_id: selectedConv.thread_id, // ✅ correct
+      }),
+    }).catch(() => {});
+  }, [selectedConv?.thread_id]);
 
   return (
     <div className="min-h-screen bg-background">
