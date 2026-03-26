@@ -337,8 +337,16 @@ console.log("Socket effect running with:", { displayName, validationStatus });
       });
     }
 
+    pc.oniceconnectionstatechange = () => {
+      console.log("ICE state:", pc.iceConnectionState);
+    };
+
+
     pc.onicecandidate = (ev) => {
       if (ev.candidate) socket.emit("ice-candidate", { to: id, candidate: ev.candidate });
+      if (ev.candidate) {
+        console.log("ICE candidate:", ev.candidate.type);
+      }
     };
 
     pc.ontrack = (ev) => {
