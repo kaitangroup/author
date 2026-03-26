@@ -16,18 +16,35 @@ type RoomPageProps = {
 };
 
 
- const ICE: RTCConfiguration = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
+ // const ICE: RTCConfiguration = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
 
-// const ICE: RTCConfiguration = {
-//   iceServers: [
-//     { urls: "stun:stun.l.google.com:19302" },
-//     {
-//       urls: "turn:openrelay.metered.ca:80",
-//       username: "openrelayproject",
-//       credential: "openrelayproject"
-//     }
-//   ]
-// };
+ const ICE: RTCConfiguration = {
+  iceServers: [
+    {
+      urls: "stun:stun.relay.metered.ca:80",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:80",
+      username: "61aac7f115d12f075a6e4ebf",
+      credential: "FWasaGIrhXLmtTwl",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:80?transport=tcp",
+      username: "61aac7f115d12f075a6e4ebf",
+      credential: "FWasaGIrhXLmtTwl",
+    },
+    {
+      urls: "turn:global.relay.metered.ca:443",
+      username: "61aac7f115d12f075a6e4ebf",
+      credential: "FWasaGIrhXLmtTwl",
+    },
+    {
+      urls: "turns:global.relay.metered.ca:443?transport=tcp",
+      username: "61aac7f115d12f075a6e4ebf",
+      credential: "FWasaGIrhXLmtTwl",
+    },
+  ],
+};
 
 export default function RoomPage({ params }: RoomPageProps) {
   const { data: session, status } = useSession();  
@@ -316,11 +333,7 @@ console.log("Socket effect running with:", { displayName, validationStatus });
     const existing = peerConns.get(id);
     if (existing) return existing;
 
-    console.log("FINAL ICE USED:", ICE);
-
     const pc = new RTCPeerConnection(ICE);
-
-    console.log("PC CONFIG:", pc.getConfiguration());
     if (!pendingIce.has(id)) pendingIce.set(id, []);
     peerConns.set(id, pc);
 
