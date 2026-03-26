@@ -20,31 +20,15 @@ type RoomPageProps = {
 
 // const ICE: RTCConfiguration = {
 //   iceServers: [
+//     { urls: "stun:stun.l.google.com:19302" },
 //     {
-//       urls: "stun:stun.relay.metered.ca:80",
-//     },
-//     {
-//       urls: "turn:global.relay.metered.ca:80",
-//       username: "61aac7f115d12f075a6e4ebf",
-//       credential: "FWasaGIrhXLmtTwl",
-//     },
-//     {
-//       urls: "turn:global.relay.metered.ca:80?transport=tcp",
-//       username: "61aac7f115d12f075a6e4ebf",
-//       credential: "FWasaGIrhXLmtTwl",
-//     },
-//     {
-//       urls: "turn:global.relay.metered.ca:443",
-//       username: "61aac7f115d12f075a6e4ebf",
-//       credential: "FWasaGIrhXLmtTwl",
-//     },
-//     {
-//       urls: "turns:global.relay.metered.ca:443?transport=tcp",
-//       username: "61aac7f115d12f075a6e4ebf",
-//       credential: "FWasaGIrhXLmtTwl",
-//     },
-//   ],
+//       urls: "turn:openrelay.metered.ca:80",
+//       username: "openrelayproject",
+//       credential: "openrelayproject"
+//     }
+//   ]
 // };
+
 export default function RoomPage({ params }: RoomPageProps) {
   const { data: session, status } = useSession();  
   const isMobile = useIsMobile();
@@ -347,16 +331,8 @@ console.log("Socket effect running with:", { displayName, validationStatus });
       });
     }
 
-    pc.oniceconnectionstatechange = () => {
-      console.log("ICE state:", pc.iceConnectionState);
-    };
-
-
     pc.onicecandidate = (ev) => {
       if (ev.candidate) socket.emit("ice-candidate", { to: id, candidate: ev.candidate });
-      if (ev.candidate) {
-        console.log("ICE candidate:", ev.candidate.type);
-      }
     };
 
     pc.ontrack = (ev) => {
