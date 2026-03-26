@@ -16,35 +16,35 @@ type RoomPageProps = {
 };
 
 
-// const ICE: RTCConfiguration = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
+ const ICE: RTCConfiguration = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
 
-const ICE: RTCConfiguration = {
-  iceServers: [
-    {
-      urls: "stun:stun.relay.metered.ca:80",
-    },
-    {
-      urls: "turn:global.relay.metered.ca:80",
-      username: "61aac7f115d12f075a6e4ebf",
-      credential: "FWasaGIrhXLmtTwl",
-    },
-    {
-      urls: "turn:global.relay.metered.ca:80?transport=tcp",
-      username: "61aac7f115d12f075a6e4ebf",
-      credential: "FWasaGIrhXLmtTwl",
-    },
-    {
-      urls: "turn:global.relay.metered.ca:443",
-      username: "61aac7f115d12f075a6e4ebf",
-      credential: "FWasaGIrhXLmtTwl",
-    },
-    {
-      urls: "turns:global.relay.metered.ca:443?transport=tcp",
-      username: "61aac7f115d12f075a6e4ebf",
-      credential: "FWasaGIrhXLmtTwl",
-    },
-  ],
-};
+// const ICE: RTCConfiguration = {
+//   iceServers: [
+//     {
+//       urls: "stun:stun.relay.metered.ca:80",
+//     },
+//     {
+//       urls: "turn:global.relay.metered.ca:80",
+//       username: "61aac7f115d12f075a6e4ebf",
+//       credential: "FWasaGIrhXLmtTwl",
+//     },
+//     {
+//       urls: "turn:global.relay.metered.ca:80?transport=tcp",
+//       username: "61aac7f115d12f075a6e4ebf",
+//       credential: "FWasaGIrhXLmtTwl",
+//     },
+//     {
+//       urls: "turn:global.relay.metered.ca:443",
+//       username: "61aac7f115d12f075a6e4ebf",
+//       credential: "FWasaGIrhXLmtTwl",
+//     },
+//     {
+//       urls: "turns:global.relay.metered.ca:443?transport=tcp",
+//       username: "61aac7f115d12f075a6e4ebf",
+//       credential: "FWasaGIrhXLmtTwl",
+//     },
+//   ],
+// };
 export default function RoomPage({ params }: RoomPageProps) {
   const { data: session, status } = useSession();  
   const isMobile = useIsMobile();
