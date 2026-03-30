@@ -17,31 +17,30 @@ type RoomPageProps = {
 
 
  // const ICE: RTCConfiguration = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
-
- const ICE: RTCConfiguration = {
+const ICE: RTCConfiguration = {
   iceServers: [
     {
-      urls: "stun:stun.relay.metered.ca:80",
+      urls: "stun:stun.l.google.com:19302",
     },
     {
-      urls: "turn:global.relay.metered.ca:80",
-      username: "61aac7f115d12f075a6e4ebf",
-      credential: "FWasaGIrhXLmtTwl",
+      urls: "turn:standard.relay.metered.ca:80",
+      username: "5cd9e5e8d239eb530c65d105",
+      credential: "0hGe6/PhaXkNEUIK",
     },
     {
-      urls: "turn:global.relay.metered.ca:80?transport=tcp",
-      username: "61aac7f115d12f075a6e4ebf",
-      credential: "FWasaGIrhXLmtTwl",
+      urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+      username: "5cd9e5e8d239eb530c65d105",
+      credential: "0hGe6/PhaXkNEUIK",
     },
     {
-      urls: "turn:global.relay.metered.ca:443",
-      username: "61aac7f115d12f075a6e4ebf",
-      credential: "FWasaGIrhXLmtTwl",
+      urls: "turn:standard.relay.metered.ca:443",
+      username: "5cd9e5e8d239eb530c65d105",
+      credential: "0hGe6/PhaXkNEUIK",
     },
     {
-      urls: "turns:global.relay.metered.ca:443?transport=tcp",
-      username: "61aac7f115d12f075a6e4ebf",
-      credential: "FWasaGIrhXLmtTwl",
+      urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+      username: "5cd9e5e8d239eb530c65d105",
+      credential: "0hGe6/PhaXkNEUIK",
     },
   ],
 };
