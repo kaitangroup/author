@@ -17,33 +17,57 @@ type RoomPageProps = {
 
 
  // const ICE: RTCConfiguration = { iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }] };
-const ICE: RTCConfiguration = {
-  iceServers: [
-    {
-      urls: "stun:stun.l.google.com:19302",
-    },
-    {
-      urls: "turn:standard.relay.metered.ca:80",
-      username: "5cd9e5e8d239eb530c65d105",
-      credential: "0hGe6/PhaXkNEUIK",
-    },
-    {
-      urls: "turn:standard.relay.metered.ca:80?transport=tcp",
-      username: "5cd9e5e8d239eb530c65d105",
-      credential: "0hGe6/PhaXkNEUIK",
-    },
-    {
-      urls: "turn:standard.relay.metered.ca:443",
-      username: "5cd9e5e8d239eb530c65d105",
-      credential: "0hGe6/PhaXkNEUIK",
-    },
-    {
-      urls: "turns:standard.relay.metered.ca:443?transport=tcp",
-      username: "5cd9e5e8d239eb530c65d105",
-      credential: "0hGe6/PhaXkNEUIK",
-    },
-  ],
-};
+// const ICE: RTCConfiguration = {
+//   iceServers: [
+//     {
+//       urls: "stun:stun.l.google.com:19302",
+//     },
+//     {
+//       urls: "turn:standard.relay.metered.ca:80",
+//       username: "5cd9e5e8d239eb530c65d105",
+//       credential: "0hGe6/PhaXkNEUIK",
+//     },
+//     {
+//       urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+//       username: "5cd9e5e8d239eb530c65d105",
+//       credential: "0hGe6/PhaXkNEUIK",
+//     },
+//     {
+//       urls: "turn:standard.relay.metered.ca:443",
+//       username: "5cd9e5e8d239eb530c65d105",
+//       credential: "0hGe6/PhaXkNEUIK",
+//     },
+//     {
+//       urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+//       username: "5cd9e5e8d239eb530c65d105",
+//       credential: "0hGe6/PhaXkNEUIK",
+//     },
+//   ],
+// };
+
+async function getICE(): Promise<RTCConfiguration> {
+  try {
+    const res = await fetch("/api/turn");
+    const data = await res.json();
+
+    return {
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        {
+          urls: data.urls,
+          username: data.username,
+          credential: data.credential,
+        },
+      ],
+    };
+  } catch (e) {
+    console.error("TURN fetch failed", e);
+
+    return {
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    };
+  }
+}
 
 export default function RoomPage({ params }: RoomPageProps) {
   const { data: session, status } = useSession();  
@@ -332,7 +356,10 @@ console.log("Socket effect running with:", { displayName, validationStatus });
     const existing = peerConns.get(id);
     if (existing) return existing;
 
-    const pc = new RTCPeerConnection(ICE);
+    const iceConfig = await getICE();
+    console.log("ICE CONFIG:", iceConfig);
+    
+    const pc = new RTCPeerConnection(iceConfig);
     if (!pendingIce.has(id)) pendingIce.set(id, []);
     peerConns.set(id, pc);
 
